@@ -1,0 +1,76 @@
+<?php
+require_once 'modelo/Usuario.php';
+
+class ControladorEstudiante {
+    private $modelo;
+
+    public function __construct() {
+        $this->modelo = new Ususario();
+    }
+
+    public function mostrarLogin() {
+        require 'vista/Login.php';
+    }
+
+    public function mostrarDasboard() {
+        require 'vista/app.php';
+    }
+
+    public function iniciarSesion($correo, $contrasena) {
+    if ($this->modelo->verificarCredenciales($correo, $contrasena)) {
+        session_start();
+
+        // Obtener toda la información del usuario
+        $infoUsuario = $this->modelo->obtenerInformacionUsuario($correo);
+
+        // Guardar cada valor por separado en la sesión
+        $_SESSION['id_usuario']   = $infoUsuario['id_usuario'];
+        $_SESSION['usuario']      = $infoUsuario['nombre'];
+        $_SESSION['apellido']     = $infoUsuario['apellido'];
+        $_SESSION['correo']       = $infoUsuario['correo'];
+        $_SESSION['universidad']  = $infoUsuario['universidad'];
+        $_SESSION['programa']     = $infoUsuario['programa'] ?? ''; 
+
+        $this->mostrarDasboard();
+    } else {
+        echo "Credenciales incorrectas.";
+    }
+}
+    public function cerrarSesion() {
+    session_start();          
+    session_unset();           
+    session_destroy();         
+    // Redirige al login o index
+    header('Location: index.php?action=mostrarLogin');
+    exit();
+}
+
+
+
+    public function mostrarRegistro() {
+        require 'vista/Registrar.php';
+    }
+
+    public function registrar($nombre, $apellido, $correo, $contrasena, $universidad) {
+        if ($this->modelo->registrar($nombre, $apellido, $correo, $contrasena, $universidad)) {
+            require 'vista/index.php';
+        } else {
+            echo "Error al registrar.";
+        }
+    }
+
+    public function mostrarPerfil() {
+    session_start();
+
+    if (!isset($_SESSION['correo'])) {
+        header('Location: login.php');
+        exit();
+    }
+
+    $correo = $_SESSION['correo'];
+    $usuario = $this->modelo->obtenerInformacionUsuario($correo);
+
+    include 'vista/perfil.php'; // tu vista de perfil
+}
+
+}
