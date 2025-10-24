@@ -1,14 +1,14 @@
 <?php
 require_once 'modelo/Conexion.php';
 
-class Ususario {
+class Usuario {
     private $conexion;
 
     public function __construct() {
         $this->conexion = (new Conexion())->getConexion();
     }
 
-    public function registrar($nombre, $apellido, $correo, $contrasena, $universidad) {
+    public function registrar($nombre, $apellido, $correo, $contrasena, $universidad, $idRol, $programa) {
         $contrasena_hashed = password_hash($contrasena, PASSWORD_DEFAULT);
         // Buscar universidad
         $stmt = $this->conexion->prepare("SELECT id_universidad FROM universidad WHERE nombre = ?");
@@ -24,9 +24,11 @@ class Ususario {
             $stmt->execute();
             $id_universidad = $this->conexion->insert_id;
         }
+
+        $cod_rol = (int)$idRol;
         // Insertar estudiante
-        $stmt = $this->conexion->prepare("INSERT INTO usuarios (nombre, apellido, id_universidad) VALUES (?, ?, ?)");
-        $stmt->bind_param("ssi", $nombre, $apellido, $id_universidad);
+        $stmt = $this->conexion->prepare("INSERT INTO usuarios (nombre, apellido, id_universidad,id_rol,programa_estudio) VALUES (?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssiis", $nombre, $apellido, $id_universidad, $cod_rol, $programa);
         $stmt->execute();
         $id_usuario = $this->conexion->insert_id;
         // Insertar acceso

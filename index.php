@@ -15,7 +15,7 @@ if (isset($_GET['action'])) {
             break; 
         case 'registrar': 
             // Llamar al método que maneja el registro de un nuevo estudiante 
-            $controlador->registrar($_POST['nombre'], $_POST['apellido'], $_POST['correo'], $_POST['contrasena'], $_POST['universidad']); 
+            $controlador->registrar($_POST['nombre'], $_POST['apellido'], $_POST['correo'], $_POST['contrasena'], $_POST['universidad'], $_POST['idRol'], $_POST['programa']); 
             break; 
         case 'mostrarRegistro': 
             // Mostrar el formulario de registro 

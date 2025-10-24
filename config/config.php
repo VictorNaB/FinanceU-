@@ -3,5 +3,5 @@ return [
     'host' => 'localhost',
     'usuario' => 'root',
     'contrasena' => '',
-    'base_de_datos' => 'financeu'
+    'base_de_datos' => 'financeu2'
 ];

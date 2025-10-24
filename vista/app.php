@@ -104,7 +104,7 @@ if (!in_array($page, $allowed)) { $page = 'dashboard'; }
     </main>
   </div>
 
- <script src="vista/js/script.js?v=6"></script>
+ <script src="vista/js/script.js?v=7"></script>
 
 </body>
 </html>

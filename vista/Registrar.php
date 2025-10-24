@@ -55,7 +55,28 @@
 
                         <div class="form-group">
                             <label for="register-university">Universidad</label>
-                            <input type="text" id="register-university" name="universidad" required>
+                            <select id="register-university" name="universidad" required>
+                                <option value="">Selecciona tu universidad</option>
+                                <option value="Universidad del Magdalena">Universidad del Magdalena</option>
+                                <option value="Universidad Cooperativa de Colombia">Universidad Cooperativa de Colombia</option>
+                                <option value="Universidad Nacional de Colombia">Universidad Nacional de Colombia
+                                </option>
+                                <option value="Universidad de los Andes">Universidad de los Andes</option>
+                                <option value="Pontificia Universidad Javeriana">Pontificia Universidad Javeriana
+                                </option>
+                                <option value="Universidad del Rosario">Universidad del Rosario</option>
+                                <option value="Universidad de La Sabana">Universidad de La Sabana</option>
+                                <option value="Universidad EAFIT">Universidad EAFIT</option>
+                                <option value="Universidad del Norte">Universidad del Norte</option>
+                                <option value="Otra">Otra</option>
+                            </select>  
+                        </div>
+
+                        <input type="hidden" name="idRol" value="2">
+
+                         <div class="form-group">
+                            <label for="register-program">Programa</label>
+                            <input type="text" id="register-program" name="programa" required>
                                
                         </div>
 

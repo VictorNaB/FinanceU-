@@ -5,7 +5,7 @@ class ControladorEstudiante {
     private $modelo;
 
     public function __construct() {
-        $this->modelo = new Ususario();
+        $this->modelo = new Usuario();
     }
 
     public function mostrarLogin() {
@@ -29,7 +29,7 @@ class ControladorEstudiante {
         $_SESSION['apellido']     = $infoUsuario['apellido'];
         $_SESSION['correo']       = $infoUsuario['correo'];
         $_SESSION['universidad']  = $infoUsuario['universidad'];
-        $_SESSION['programa']     = $infoUsuario['programa'] ?? ''; 
+        $_SESSION['programa']     = $infoUsuario['programa']; 
 
         $this->mostrarDasboard();
     } else {
@@ -51,8 +51,8 @@ class ControladorEstudiante {
         require 'vista/Registrar.php';
     }
 
-    public function registrar($nombre, $apellido, $correo, $contrasena, $universidad) {
-        if ($this->modelo->registrar($nombre, $apellido, $correo, $contrasena, $universidad)) {
+    public function registrar($nombre, $apellido, $correo, $contrasena, $universidad,$idRol, $programa ) {
+        if ($this->modelo->registrar($nombre, $apellido, $correo, $contrasena, $universidad, $idRol, $programa)) {
             require 'vista/index.php';
         } else {
             echo "Error al registrar.";
