@@ -20,6 +20,11 @@ class Meta {
             ':fecha_limite'   => $fechaLimite
         ]);
         return (int)$this->db->lastInsertId();
+        $metaEstablecidas = 1; 
+        $stmt2 = $this->conexion->prepare("INSERT INTO EstadisticasUso (id_usuario, metas_establecidas) VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE metas_establecidas = metas_establecidas + 1");
+        $stmt2->bind_param("ii", $id_usuario, $metaEstablecidas);
+        return $stmt2->execute();
     }
 
     
