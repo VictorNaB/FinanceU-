@@ -11,14 +11,14 @@
 </head>
 
 <body>
-   <div id="register" class="active">
+    <div id="register" class="active">
         <div class="auth-container">
             <div class="auth-card">
                 <div class="auth-header">
                     <a href="?action=mostrarLanding">
                         <button class="back-btn" onclick="showLanding()">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
                     </a>
                     <div class="logo">
                         <i class="fas fa-graduation-cap"></i>
@@ -69,23 +69,23 @@
                                 <option value="Universidad EAFIT">Universidad EAFIT</option>
                                 <option value="Universidad del Norte">Universidad del Norte</option>
                                 <option value="Otra">Otra</option>
-                            </select>  
+                            </select>
                         </div>
 
                         <input type="hidden" name="idRol" value="2">
 
-                         <div class="form-group">
+                        <div class="form-group">
                             <label for="register-program">Programa</label>
                             <input type="text" id="register-program" name="programa" required>
-                               
+
                         </div>
 
                         <div class="auth-error" id="register-error"></div>
 
                         <a href="?action=mostrarLogin">
                             <button type="submit" class="btn-primary btn-full">
-                            Crear Cuenta
-                        </button>
+                                Crear Cuenta
+                            </button>
                         </a>
                     </form>
 

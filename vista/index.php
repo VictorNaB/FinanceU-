@@ -25,12 +25,12 @@
                             <button class="btn-secondary" onclick="showLogin()">Iniciar Sesión</button>
                         </a>
 
-                       
+
                         <nav class="landing-nav">
-                        <a href="?action=mostrarRegistro">
-                             <button class="btn-primary" onclick="showRegister()">Registrarse</button>
-                        </a>
-                    </nav>
+                            <a href="?action=mostrarRegistro">
+                                <button class="btn-primary" onclick="showRegister()">Registrarse</button>
+                            </a>
+                        </nav>
                 </header>
 
                 <main class="landing-main">
@@ -43,11 +43,11 @@
                             <div class="hero-buttons">
                                 <a href="?action=mostrarRegistro">
                                     <button class="btn-primary btn-large" onclick="showRegister()">
-                                    Comenzar Gratis
-                                    <i class="fas fa-arrow-right"></i>
-                                </button>
+                                        Comenzar Gratis
+                                        <i class="fas fa-arrow-right"></i>
+                                    </button>
                                 </a>
-                                
+
                             </div>
                         </div>
 
