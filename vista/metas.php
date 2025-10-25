@@ -16,7 +16,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <form id="goal-form" class="modal-form">
+        <form id="goal-form" class="modal-form" method="post" action="index.php?action=crearMeta">
           <div class="form-group">
             <label for="goal-title">Título de la Meta</label>
             <input type="text" id="goal-title" name="title" required>
