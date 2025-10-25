@@ -1,43 +1,43 @@
 <section id="calendar-section" class="content-section active">
-                <div class="section-header">
-                    <h1>Calendario y Recordatorios</h1>
-                    <button class="btn-primary" onclick="openReminderModal()">
-                        <i class="fas fa-plus"></i>
-                        Nuevo Recordatorio
+    <div class="section-header">
+        <h1>Calendario y Recordatorios</h1>
+        <button class="btn-primary" onclick="openReminderModal()">
+            <i class="fas fa-plus"></i>
+            Nuevo Recordatorio
+        </button>
+    </div>
+
+    <div class="calendar-grid">
+        <div class="calendar-card">
+            <div class="card-header">
+                <h3>Calendario</h3>
+                <div class="calendar-nav">
+                    <button id="prev-month" class="calendar-nav-btn">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span id="current-month">Diciembre 2024</span>
+                    <button id="next-month" class="calendar-nav-btn">
+                        <i class="fas fa-chevron-right"></i>
                     </button>
                 </div>
+            </div>
+            <div class="card-content">
+                <div class="calendar" id="calendar"></div>
+            </div>
+        </div>
 
-                <div class="calendar-grid">
-                    <div class="calendar-card">
-                        <div class="card-header">
-                            <h3>Calendario</h3>
-                            <div class="calendar-nav">
-                                <button id="prev-month" class="calendar-nav-btn">
-                                    <i class="fas fa-chevron-left"></i>
-                                </button>
-                                <span id="current-month">Diciembre 2024</span>
-                                <button id="next-month" class="calendar-nav-btn">
-                                    <i class="fas fa-chevron-right"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="card-content">
-                            <div class="calendar" id="calendar"></div>
-                        </div>
-                    </div>
-
-                    <div class="reminders-card">
-                        <div class="card-header">
-                            <h3>Próximos Recordatorios</h3>
-                        </div>
-                        <div class="card-content">
-                            <div id="reminders-list" class="reminders-list"></div>
-                        </div>
-                    </div>
-                </div>
+        <div class="reminders-card">
+            <div class="card-header">
+                <h3>Próximos Recordatorios</h3>
+            </div>
+            <div class="card-content">
+                <div id="reminders-list" class="reminders-list"></div>
+            </div>
+        </div>
+    </div>
 
 
-                 <!-- Reminder Modal -->
+    <!-- Reminder Modal -->
     <div id="reminder-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -102,4 +102,4 @@
             </div>
         </div>
     </div>
-            </section>
+</section>

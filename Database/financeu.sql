@@ -132,13 +132,15 @@ CREATE TABLE EstadisticasUso (
 
 -- 13. Tabla: Análisis Semanal
 CREATE TABLE AnalisisSemanal (
-    id_usuario INT PRIMARY KEY NOT NULL,
-    semana_inicio DATE NOT NULL,
-    semana_fin DATE NOT NULL,
-    ingresos_totales DECIMAL(14,2),
-    gastos_totales DECIMAL(14,2),
-    balance DECIMAL(14,2),
-    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
+  idAnalisis INT AUTO_INCREMENT PRIMARY KEY,
+  id_usuario INT NOT NULL,
+  semana_inicio DATE NOT NULL,
+  semana_fin DATE NOT NULL,
+  ingresos_totales DECIMAL(14,2) NOT NULL DEFAULT 0,
+  gastos_totales   DECIMAL(14,2) NOT NULL DEFAULT 0,
+  balance          DECIMAL(14,2) NOT NULL DEFAULT 0,
+  CONSTRAINT uq_usuario_semana UNIQUE (id_usuario, semana_inicio),
+  FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 ) ENGINE=InnoDB;

@@ -1,6 +1,6 @@
 <section id="dashboard-section" class="content-section active">
   <div class="section-header">
-    <h1>¡Bienvenido <?php echo htmlspecialchars($_SESSION['usuario']);?> a tu Dashboard Financiero!</h1>
+    <h1>¡Bienvenido <?php echo htmlspecialchars($_SESSION['usuario']); ?> a tu Dashboard Financiero!</h1>
     <br>
     <p>Resumen de tu situación financiera actual</p>
   </div>
@@ -41,22 +41,34 @@
 
   <div class="dashboard-grid">
     <div class="dashboard-card">
-      <div class="card-header"><h3>Gastos por Categoría</h3></div>
+      <div class="card-header">
+        <h3>Gastos por Categoría</h3>
+      </div>
       <div class="card-content"><canvas id="expenses-chart"></canvas></div>
     </div>
 
     <div class="dashboard-card">
-      <div class="card-header"><h3>Transacciones Recientes</h3></div>
-      <div class="card-content"><div id="recent-transactions" class="transactions-list"></div></div>
+      <div class="card-header">
+        <h3>Transacciones Recientes</h3>
+      </div>
+      <div class="card-content">
+        <div id="recent-transactions" class="transactions-list"></div>
+      </div>
     </div>
 
     <div class="dashboard-card">
-      <div class="card-header"><h3>Progreso de Metas</h3></div>
-      <div class="card-content"><div id="goals-progress" class="goals-list"></div></div>
+      <div class="card-header">
+        <h3>Progreso de Metas</h3>
+      </div>
+      <div class="card-content">
+        <div id="goals-progress" class="goals-list"></div>
+      </div>
     </div>
 
     <div class="dashboard-card">
-      <div class="card-header"><h3>Tendencia Mensual</h3></div>
+      <div class="card-header">
+        <h3>Tendencia Mensual</h3>
+      </div>
       <div class="card-content"><canvas id="trend-chart"></canvas></div>
     </div>
   </div>

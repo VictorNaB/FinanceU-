@@ -4,14 +4,16 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 
-$page = strtolower($_GET['page'] ?? 'dashboard');    
-$allowed = ['dashboard','transacciones','perfil','metas','analisis','calendario'];   
+$page = strtolower($_GET['page'] ?? 'dashboard');
+$allowed = ['dashboard', 'transacciones', 'perfil', 'metas', 'analisis', 'calendario'];
 if (!in_array($page, $allowed, true)) {
   $page = 'dashboard';
 }
 
 if ($page === 'transacciones') {
-  if (session_status() === PHP_SESSION_NONE) { session_start(); }
+  if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+  }
   if (!isset($_SESSION['id_usuario'])) {
     header('Location: index.php?action=mostrarLogin');
     exit;
@@ -24,6 +26,7 @@ if ($page === 'transacciones') {
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -32,6 +35,7 @@ if ($page === 'transacciones') {
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <title>FinanceU</title>
 </head>
+
 <body>
   <div id="main-app" class="page">
 
@@ -46,42 +50,42 @@ if ($page === 'transacciones') {
         <div class="user-info" id="user-info">
           <div class="user-avatar"><i class="fas fa-user"></i></div>
           <div class="user-details">
-            <div class="user-name"><?php echo htmlspecialchars($_SESSION['usuario']);?></div>
-            <div class="user-email"><?php echo htmlspecialchars($_SESSION['correo']);?></div>
+            <div class="user-name"><?php echo htmlspecialchars($_SESSION['usuario']); ?></div>
+            <div class="user-email"><?php echo htmlspecialchars($_SESSION['correo']); ?></div>
           </div>
         </div>
 
         <ul class="nav-menu">
           <li class="nav-item">
-            <a href="index.php?action=app&page=dashboard" class="nav-link <?php echo $page==='dashboard'?'active':'';?>">
+            <a href="index.php?action=app&page=dashboard" class="nav-link <?php echo $page === 'dashboard' ? 'active' : ''; ?>">
               <i class="fas fa-chart-line"></i><span>Dashboard</span>
             </a>
           </li>
           <li class="nav-item">
-            <a href="index.php?action=app&page=transacciones" class="nav-link <?php echo $page==='transacciones'?'active':'';?>">
+            <a href="index.php?action=app&page=transacciones" class="nav-link <?php echo $page === 'transacciones' ? 'active' : ''; ?>">
               <i class="fas fa-exchange-alt"></i><span>Transacciones</span>
             </a>
           </li>
           <li class="nav-item">
-            <a href="index.php?action=app&page=metas" class="nav-link <?php echo $page==='metas'?'active':'';?>">
+            <a href="index.php?action=app&page=metas" class="nav-link <?php echo $page === 'metas' ? 'active' : ''; ?>">
               <i class="fas fa-piggy-bank"></i><span>Metas</span>
             </a>
           </li>
 
-           <li class="nav-item">
-            <a href="index.php?action=app&page=analisis" class="nav-link <?php echo $page==='analisis'?'active':'';?>">
+          <li class="nav-item">
+            <a href="index.php?action=app&page=analisis" class="nav-link <?php echo $page === 'analisis' ? 'active' : ''; ?>">
               <i class="fas fa-chart-bar"></i><span>Análisis</span>
             </a>
           </li>
 
-           <li class="nav-item">
-            <a href="index.php?action=app&page=calendario" class="nav-link <?php echo $page==='calendario'?'active':'';?>">
-               <i class="fas fa-calendar-alt"></i><span>Calendario</span>
+          <li class="nav-item">
+            <a href="index.php?action=app&page=calendario" class="nav-link <?php echo $page === 'calendario' ? 'active' : ''; ?>">
+              <i class="fas fa-calendar-alt"></i><span>Calendario</span>
             </a>
           </li>
 
           <li class="nav-item">
-            <a href="index.php?action=app&page=perfil" class="nav-link <?php echo $page==='perfil'?'active':'';?>">
+            <a href="index.php?action=app&page=perfil" class="nav-link <?php echo $page === 'perfil' ? 'active' : ''; ?>">
               <i class="fas fa-user-cog"></i><span>Perfil</span>
             </a>
           </li>
@@ -105,19 +109,20 @@ if ($page === 'transacciones') {
 
       <!-- Aquí se incluye la vista solicitada: vista/dashboard.php, vista/transactions.php, etc. -->
       <?php
-        $file = __DIR__ . "/{$page}.php";
-        if (is_file($file)) {
-          include $file;
-        } else {
-          echo "<section class='content-section'><h2>Vista no encontrada</h2><p>{$page}.php</p></section>";
-        }
+      $file = __DIR__ . "/{$page}.php";
+      if (is_file($file)) {
+        include $file;
+      } else {
+        echo "<section class='content-section'><h2>Vista no encontrada</h2><p>{$page}.php</p></section>";
+      }
       ?>
 
       <div id="toast-container" class="toast-container"></div>
     </main>
   </div>
 
- <script src="vista/js/script.js?v=9"></script>
+  <script src="vista/js/script.js?v=9"></script>
 
 </body>
+
 </html>

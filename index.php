@@ -1,37 +1,37 @@
-<?php 
+<?php
 
-require_once 'controlador/ControladorUsuario.php'; 
+require_once 'controlador/ControladorUsuario.php';
 require_once 'controlador/ControladorTransaccion.php';
 // Crear una instancia del controlador 
 
-    $controlador = new ControladorEstudiante();
-    $controladorTransaccion = new ControladorTransaccion();
+$controlador = new ControladorEstudiante();
+$controladorTransaccion = new ControladorTransaccion();
 
 // Verificar si se ha especificado una acción en la URL 
-if (isset($_GET['action'])) { 
+if (isset($_GET['action'])) {
 
-    switch ($_GET['action']) { 
+    switch ($_GET['action']) {
 
-        case 'iniciarSesion': 
+        case 'iniciarSesion':
             // Llamar al método que maneja el inicio de sesión 
             $controlador->iniciarSesion($_POST['correo'], $_POST['contrasena']);
-            break; 
-        case 'registrar': 
+            break;
+        case 'registrar':
             // Llamar al método que maneja el registro de un nuevo estudiante 
-            $controlador->registrar($_POST['nombre'], $_POST['apellido'], $_POST['correo'], $_POST['contrasena'], $_POST['universidad'], $_POST['idRol'], $_POST['programa']); 
-            break; 
-        case 'mostrarRegistro': 
+            $controlador->registrar($_POST['nombre'], $_POST['apellido'], $_POST['correo'], $_POST['contrasena'], $_POST['universidad'], $_POST['idRol'], $_POST['programa']);
+            break;
+        case 'mostrarRegistro':
             // Mostrar el formulario de registro 
-            $controlador->mostrarRegistro(); 
+            $controlador->mostrarRegistro();
             break;
-        case 'mostrarLogin': 
+        case 'mostrarLogin':
             // Mostrar el formulario de inicio de sesión
-            $controlador->mostrarLogin(); 
+            $controlador->mostrarLogin();
             break;
-        case 'mostrar': 
+        case 'mostrar':
             // Mostrar el formulario de inicio de sesión
             require 'vista/index.php';
-            break; 
+            break;
         case 'app':
             require 'vista/app.php';
             break;
@@ -41,16 +41,14 @@ if (isset($_GET['action'])) {
             break;
         case 'cerrarSesion':
             // Llamar al método que maneja el cierre de sesión 
-            $controlador->cerrarSesion(); 
+            $controlador->cerrarSesion();
             break;
-        default: 
+        default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 
             require 'vista/index.php';
-            break; 
-
-    } 
-
-} else { 
+            break;
+    }
+} else {
     // Si no se ha especificado ninguna acción, mostrar el formulario de inicio de sesión por defecto 
     require 'vista/index.php';
-} 
+}

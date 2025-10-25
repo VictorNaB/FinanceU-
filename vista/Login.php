@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -13,23 +11,23 @@
 </head>
 
 <body>
-    
-      
-       <div id="login-page" class="active">
+
+
+    <div id="login-page" class="active">
         <div class="auth-container">
             <div class="auth-card">
                 <div class="auth-header">
                     <a href="index.php">
                         <button class="back-btn" onclick="showlanding()">
-                        <i class="fas fa-arrow-left"></i>
-                    </button>
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
                     </a>
                     <div class="logo">
                         <i class="fas fa-graduation-cap"></i>
                         <span>FinanceU</span>
                     </div>
                 </div>
-                
+
 
                 <div class="auth-content">
                     <h2>Iniciar Sesión</h2>
@@ -50,8 +48,8 @@
 
                         <a href="dashboardFinanciero.html">
                             <button type="submit" class="btn-primary btn-full">
-                            Iniciar Sesión
-                        </button>
+                                Iniciar Sesión
+                            </button>
                         </a>
                     </form>
 
