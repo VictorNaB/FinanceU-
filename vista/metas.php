@@ -15,7 +15,7 @@
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body" >
         <form id="goal-form" class="modal-form" method="post" action="index.php?action=crearMeta">
           <div class="form-group">
             <label for="goal-title">Título de la Meta</label>
