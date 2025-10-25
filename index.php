@@ -1,9 +1,12 @@
 <?php 
 
 require_once 'controlador/ControladorUsuario.php'; 
+require_once 'controlador/ControladorTransaccion.php';
 // Crear una instancia del controlador 
 
     $controlador = new ControladorEstudiante();
+    $controladorTransaccion = new ControladorTransaccion();
+
 // Verificar si se ha especificado una acción en la URL 
 if (isset($_GET['action'])) { 
 
@@ -31,6 +34,10 @@ if (isset($_GET['action'])) {
             break; 
         case 'app':
             require 'vista/app.php';
+            break;
+        case 'crearTransaccion':
+            // Llamar al método que maneja la creación de una transacción
+            $controladorTransaccion->crear();
             break;
         case 'cerrarSesion':
             // Llamar al método que maneja el cierre de sesión 

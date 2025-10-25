@@ -1,19 +1,20 @@
 <section id="transactions-section" class="content-section active">
   <div class="section-header">
     <h1>Gestión de Transacciones</h1>
-    <button class="btn-primary" onclick="openTransactionModal()">
+    <button class="btn-primary" type="button" onclick="openTransactionModal()">
       <i class="fas fa-plus"></i>
       Nueva Transacción
     </button>
   </div>
 
+  <!-- Filtros -->
   <div class="transactions-filters">
     <div class="filter-group">
       <label>Tipo:</label>
       <select id="transaction-type-filter">
         <option value="all">Todos</option>
-        <option value="income">Ingresos</option>
-        <option value="expense">Gastos</option>
+        <option value="1">Ingresos</option>
+        <option value="2">Gastos</option>
       </select>
     </div>
 
@@ -21,13 +22,13 @@
       <label>Categoría:</label>
       <select id="transaction-category-filter">
         <option value="all">Todas</option>
-        <option value="food">Alimentación</option>
-        <option value="transport">Transporte</option>
-        <option value="education">Educación</option>
-        <option value="entertainment">Entretenimiento</option>
-        <option value="health">Salud</option>
-        <option value="shopping">Compras</option>
-        <option value="other">Otros</option>
+        <option value="1">Alimentación</option>
+        <option value="2">Transporte</option>
+        <option value="3">Educación</option>
+        <option value="4">Entretenimiento</option>
+        <option value="5">Salud</option>
+        <option value="6">Compras</option>
+        <option value="7">Otros</option>
       </select>
     </div>
 
@@ -42,6 +43,7 @@
     </button>
   </div>
 
+  <!-- Tabla -->
   <div class="transactions-table-container">
     <table class="transactions-table" id="transactions-table">
       <thead>
@@ -55,58 +57,84 @@
         </tr>
       </thead>
       <tbody id="transactions-tbody">
-        <tr><td colspan="6" class="text-center">No se encontraron transacciones</td></tr>
+        <?php if (isset($transacciones) && $transacciones->num_rows > 0): ?>
+          <?php
+          // (Opcional) mapas simples para mostrar nombre legible
+          $mapTipos = [1 => 'Ingreso', 2 => 'Gasto'];
+          $mapCategorias = [
+            1 => 'Alimentación',
+            2 => 'Transporte',
+            3 => 'Educación',
+            4 => 'Entretenimiento',
+            5 => 'Salud',
+            6 => 'Compras',
+            7 => 'Otros'
+          ];
+          ?>
+          <?php while ($t = $transacciones->fetch_assoc()): ?> <tr>
+              <td><?= htmlspecialchars($t['fecha']) ?></td>
+              <td><?= htmlspecialchars($t['descripcion']) ?></td>
+              <td><?= htmlspecialchars($mapCategorias[(int)$t['idCategoriaTransaccion']] ?? $t['idCategoriaTransaccion']) ?></td>
+              <td><?= htmlspecialchars($mapTipos[(int)$t['idtipo_transaccion']] ?? $t['idtipo_transaccion']) ?></td>
+              <td><?= number_format((float)$t['monto'], 2) ?></td>
+              <td> <button class="Editar">✏️</button>
+                <button class="Eliminar">🗑️</button>
+              </td>
+            </tr> <?php endwhile; ?> <?php else: ?> <tr>
+            <td colspan="6" class="text-center">No se encontraron transacciones</td>
+          </tr> <?php endif; ?>
       </tbody>
     </table>
   </div>
 
-  <!-- 🧾 Modal de Nueva Transacción -->
-  <div id="transaction-modal" class="modal">
+  <!-- Modal (dentro de la MISMA sección) -->
+  <div id="transaction-modal" class="modal modal--in-section">
     <div class="modal-content">
       <div class="modal-header">
         <h3 id="transaction-modal-title">Nueva Transacción</h3>
-        <button class="modal-close" onclick="closeTransactionModal()">
+        <button class="modal-close" type="button" onclick="closeTransactionModal()">
           <i class="fas fa-times"></i>
         </button>
       </div>
+
       <div class="modal-body">
-        <form id="transaction-form" class="modal-form">
+        <form id="transaction-form" class="modal-form" method="post" action="index.php?action=crearTransaccion">
           <div class="form-group">
             <label for="transaction-type">Tipo</label>
-            <select id="transaction-type" name="type" required>
+            <select id="transaction-type" name="id_tipo" required>
               <option value="">Selecciona el tipo</option>
-              <option value="income">Ingreso</option>
-              <option value="expense">Gasto</option>
+              <option value="1">Ingreso</option>
+              <option value="2">Gasto</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="transaction-description">Descripción</label>
-            <input type="text" id="transaction-description" name="description" required>
+            <input type="text" id="transaction-description" name="descripcion" required>
           </div>
 
           <div class="form-group">
             <label for="transaction-amount">Monto (COP)</label>
-            <input type="number" id="transaction-amount" name="amount" min="0" step="100" required>
+            <input type="number" id="transaction-amount" name="monto" min="0" step="100" required>
           </div>
 
           <div class="form-group">
             <label for="transaction-category">Categoría</label>
-            <select id="transaction-category" name="category" required>
+            <select id="transaction-category" name="id_categoria" required>
               <option value="">Selecciona la categoría</option>
-              <option value="food">Alimentación</option>
-              <option value="transport">Transporte</option>
-              <option value="education">Educación</option>
-              <option value="entertainment">Entretenimiento</option>
-              <option value="health">Salud</option>
-              <option value="shopping">Compras</option>
-              <option value="other">Otros</option>
+              <option value="1">Alimentación</option>
+              <option value="2">Transporte</option>
+              <option value="3">Educación</option>
+              <option value="4">Entretenimiento</option>
+              <option value="5">Salud</option>
+              <option value="6">Compras</option>
+              <option value="7">Otros</option>
             </select>
           </div>
 
           <div class="form-group">
             <label for="transaction-date">Fecha</label>
-            <input type="date" id="transaction-date" name="date" required>
+            <input type="date" id="transaction-date" name="fecha" value="<?= date('Y-m-d') ?>" required>
           </div>
 
           <div class="modal-actions">
@@ -118,7 +146,3 @@
     </div>
   </div>
 </section>
-    
-    
-    
-   

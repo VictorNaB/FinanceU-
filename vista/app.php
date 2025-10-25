@@ -4,9 +4,22 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 
-$page = strtolower($_GET['page'] ?? 'dashboard');      // nombres simples
-$allowed = ['dashboard','transacciones','perfil','metas','analisis','calendario'];     // agrega más si hace falta
-if (!in_array($page, $allowed)) { $page = 'dashboard'; }
+$page = strtolower($_GET['page'] ?? 'dashboard');    
+$allowed = ['dashboard','transacciones','perfil','metas','analisis','calendario'];   
+if (!in_array($page, $allowed, true)) {
+  $page = 'dashboard';
+}
+
+if ($page === 'transacciones') {
+  if (session_status() === PHP_SESSION_NONE) { session_start(); }
+  if (!isset($_SESSION['id_usuario'])) {
+    header('Location: index.php?action=mostrarLogin');
+    exit;
+  }
+  require_once __DIR__ . '/../modelo/Transaccion.php'; // ajusta ruta si tu app.php no está en /vista
+  $txModel = new Transaccion();
+  $transacciones = $txModel->obtenerTransacciones((int)$_SESSION['id_usuario']);
+}
 
 ?>
 <!DOCTYPE html>
@@ -104,7 +117,7 @@ if (!in_array($page, $allowed)) { $page = 'dashboard'; }
     </main>
   </div>
 
- <script src="vista/js/script.js?v=7"></script>
+ <script src="vista/js/script.js?v=9"></script>
 
 </body>
 </html>

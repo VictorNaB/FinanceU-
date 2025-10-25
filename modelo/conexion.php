@@ -3,7 +3,7 @@
     private $conexion;
     public function __construct()
     {
-        $config = require_once 'config/config.php';
+        $config = require __DIR__ . '/../config/config.php';
         $this->conexion = new mysqli($config['host'], $config['usuario'], $config['contrasena'], $config['base_de_datos']);
         if ($this->conexion->connect_error) {
             die("Conexión fallida: " . $this->conexion->connect_error);
