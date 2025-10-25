@@ -1,13 +1,16 @@
 <?php
 require_once 'modelo/Transaccion.php';
+require_once 'modelo/AnalisisSemanal.php';
 
 class ControladorTransaccion
 {
     private $modelo;
+    private $modeloAnalisis;
 
     public function __construct()
     {
         $this->modelo = new Transaccion();
+        $this->modeloAnalisis = new AnalisisSemanal();
     }
 
 
@@ -33,6 +36,7 @@ class ControladorTransaccion
 
         try {
             $this->modelo->registrarTransaccion($idUsuario, $idTipo, $desc, $monto, $idCategoria, $fecha);
+            $this->modeloAnalisis->acumular($idUsuario, $fecha, $idTipo, $monto);
             header('Location: index.php?action=app&page=transacciones');
             exit;
         } catch (Exception $e) {
