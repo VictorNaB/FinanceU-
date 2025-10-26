@@ -113,4 +113,10 @@ class Meta {
         $stmt->execute([':id_meta' => $idMeta]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    public function incrementarEstadisticaMetas(int $idUsuario): void {
+        $sql = "INSERT INTO EstadisticasUso (id_usuario, metas_establecidas)
+                VALUES (:u, 1)
+                ON DUPLICATE KEY UPDATE metas_establecidas = metas_establecidas + 1";
+        $this->db->prepare($sql)->execute([':u'=>$idUsuario]);
+    }
 }

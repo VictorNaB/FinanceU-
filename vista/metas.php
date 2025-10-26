@@ -45,7 +45,6 @@
       </div>
     </div>
   </div>
-
   <!-- grid de metas -->
   <div id="goals-grid" class="goals-grid"></div>
 </section>

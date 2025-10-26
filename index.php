@@ -2,10 +2,12 @@
 
 require_once 'controlador/ControladorUsuario.php';
 require_once 'controlador/ControladorTransaccion.php';
+require_once 'controlador/ControladorMetas.php';
 // Crear una instancia del controlador 
 
 $controlador = new ControladorEstudiante();
 $controladorTransaccion = new ControladorTransaccion();
+
 
 // Verificar si se ha especificado una acción en la URL 
 if (isset($_GET['action'])) {
@@ -43,6 +45,9 @@ if (isset($_GET['action'])) {
             // Llamar al método que maneja el cierre de sesión 
             $controlador->cerrarSesion();
             break;
+        case 'CrearMeta':
+            $controladorMetas->crear();
+            break;
         default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 
             require 'vista/index.php';
@@ -52,3 +57,7 @@ if (isset($_GET['action'])) {
     // Si no se ha especificado ninguna acción, mostrar el formulario de inicio de sesión por defecto 
     require 'vista/index.php';
 }
+
+
+
+
