@@ -19,22 +19,22 @@
         <form id="goal-form" class="modal-form" method="post" action="index.php?action=crearMeta">
           <div class="form-group">
             <label for="goal-title">Título de la Meta</label>
-            <input type="text" id="goal-title" name="title" required>
+            <input type="text" id="goal-title" name="titulo_meta" required>
           </div>
 
           <div class="form-group">
             <label for="goal-amount">Monto Objetivo (COP)</label>
-            <input type="number" id="goal-amount" name="targetAmount" min="0" step="1000" required>
+            <input type="number" id="goal-amount" name="monto_objetivo" min="0" step="1000" required>
           </div>
 
           <div class="form-group">
             <label for="goal-deadline">Fecha Límite</label>
-            <input type="date" id="goal-deadline" name="deadline" required>
+            <input type="date" id="goal-deadline" name="fecha_limite" required>
           </div>
 
           <div class="form-group">
             <label for="goal-description">Descripción</label>
-            <textarea id="goal-description" name="description" rows="3"></textarea>
+            <textarea id="goal-description" name="descripcion" rows="3"></textarea>
           </div>
 
           <div class="modal-actions">

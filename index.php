@@ -7,6 +7,7 @@ require_once 'controlador/ControladorMetas.php';
 
 $controlador = new ControladorEstudiante();
 $controladorTransaccion = new ControladorTransaccion();
+$controladorMetas = new ControladorMeta();
 
 
 // Verificar si se ha especificado una acción en la URL 
@@ -45,7 +46,7 @@ if (isset($_GET['action'])) {
             // Llamar al método que maneja el cierre de sesión 
             $controlador->cerrarSesion();
             break;
-        case 'CrearMeta':
+        case 'crearMeta':
             $controladorMetas->crear();
             break;
         default:

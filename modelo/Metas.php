@@ -2,67 +2,48 @@
 require_once 'modelo/Conexion.php';
 
 class Meta {
-    private $db;
+    private $conexion;
 
     public function __construct() {
-        $this->db = Conexion::getConexion();
+        $this->conexion = (new Conexion())->getConexion();
     }
 
     
-    public function crearMeta(int $idUsuario, string $nombre, float $montoObjetivo, string $fechaLimite): int {
-        $sql = "INSERT INTO metas (id_usuario, nombre, monto_objetivo, fecha_limite, creado_en)
-                VALUES (:id_usuario, :nombre, :monto_objetivo, :fecha_limite, NOW())";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':id_usuario'     => $idUsuario,
-            ':nombre'         => $nombre,
-            ':monto_objetivo' => $montoObjetivo,
-            ':fecha_limite'   => $fechaLimite
-        ]);
-        return (int)$this->db->lastInsertId();
-        $metaEstablecidas = 1; 
+    public function crearMeta($idUsuario,$nombre,$montoObjetivo,$fechaLimite,$descripcion){
+        $stmt=$this->conexion->prepare("INSERT INTO Metas (id_usuario, titulo_meta, monto_objetivo, fecha_limite, descripcion)
+                                        VALUES (?,?,?,?,?)");
+        $stmt->bind_param("isdss", $idUsuario, $nombre, $montoObjetivo, $fechaLimite, $descripcion);
+        $stmt->execute();
+        //Insercion en tabla estadisticas
+        $metasRegistradas=1;
         $stmt2 = $this->conexion->prepare("INSERT INTO EstadisticasUso (id_usuario, metas_establecidas) VALUES (?, ?)
                 ON DUPLICATE KEY UPDATE metas_establecidas = metas_establecidas + 1");
-        $stmt2->bind_param("ii", $id_usuario, $metaEstablecidas);
+        $stmt2->bind_param("ii", $idUsuario, $metasRegistradas);
         return $stmt2->execute();
+
     }
 
     
-    public function obtenerMetas(int $idUsuario): array {
-        $sql = "SELECT m.*,
-                       COALESCE(SUM(p.monto),0) AS monto_acumulado
-                  FROM metas m
-             LEFT JOIN metas_progreso p ON p.id_meta = m.id
-                 WHERE m.id_usuario = :id_usuario
-              GROUP BY m.id
-              ORDER BY m.creado_en DESC, m.id DESC";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':id_usuario' => $idUsuario]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    public function obtenerMetas(int $idUsuario){
+        $stmt = $this->conexion->prepare("SELECT * FROM Metas WHERE id_usuario = ?");
+        $stmt->bind_param("i", $idUsuario);
+        $stmt->execute();
+        return $stmt->get_result();
     }
 
     
-    public function obtenerMetaPorId(int $idMeta): ?array {
-        $sql = "SELECT m.*,
-                       COALESCE(SUM(p.monto),0) AS monto_acumulado
-                  FROM metas m
-             LEFT JOIN metas_progreso p ON p.id_meta = m.id
-                 WHERE m.id = :id
-              GROUP BY m.id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':id' => $idMeta]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
+    public function obtenerMetaPorId(int $idMeta){
+        
     }
 
     
-    public function actualizarMeta(int $idMeta, string $nombre, float $montoObjetivo, ?string $fechaLimite = null): bool {
+    public function actualizarMeta(int $idMeta, string $nombre, float $montoObjetivo, ?string $fechaLimite = null){
         $sql = "UPDATE metas
                    SET nombre = :nombre,
                        monto_objetivo = :monto_objetivo,
                        fecha_limite = :fecha_limite
                  WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conexion->prepare($sql);
         return $stmt->execute([
             ':nombre'         => $nombre,
             ':monto_objetivo' => $montoObjetivo,
@@ -72,51 +53,45 @@ class Meta {
     }
 
     
-    public function eliminarMeta(int $idMeta): bool {
+    public function eliminarMeta(int $idMeta){
         try {
             $this->db->beginTransaction();
 
-            $stmt1 = $this->db->prepare("DELETE FROM metas_progreso WHERE id_meta = :id");
+            $stmt1 = $this->conexion->prepare("DELETE FROM metas_progreso WHERE id_meta = :id");
             $stmt1->execute([':id' => $idMeta]);
 
-            $stmt2 = $this->db->prepare("DELETE FROM metas WHERE id = :id");
+            $stmt2 = $this->conexion->prepare("DELETE FROM metas WHERE id = :id");
             $stmt2->execute([':id' => $idMeta]);
 
-            $this->db->commit();
+            $this->conexion->commit();
             return true;
         } catch (Exception $e) {
-            $this->db->rollBack();
+            $this->conexion->rollBack();
             throw $e;
         }
     }
 
     
-    public function registrarProgreso(int $idMeta, float $monto, ?string $fecha = null, ?string $nota = null): int {
+    public function registrarProgreso(int $idMeta, float $monto, ?string $fecha = null, ?string $nota = null){
         $sql = "INSERT INTO metas_progreso (id_meta, monto, fecha, nota, creado_en)
                 VALUES (:id_meta, :monto, :fecha, :nota, NOW())";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conexion->prepare($sql);
         $stmt->execute([
             ':id_meta' => $idMeta,
             ':monto'   => $monto,
             ':fecha'   => $fecha ?: date('Y-m-d'),
             ':nota'    => $nota
         ]);
-        return (int)$this->db->lastInsertId();
+        return (int)$this->conexion->lastInsertId();
     }
 
     
-    public function obtenerProgresos(int $idMeta): array {
+    public function obtenerProgresos(int $idMeta){
         $sql = "SELECT * FROM metas_progreso
                  WHERE id_meta = :id_meta
               ORDER BY fecha DESC, id DESC";
-        $stmt = $this->db->prepare($sql);
+        $stmt = $this->conexion->prepare($sql);
         $stmt->execute([':id_meta' => $idMeta]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-    public function incrementarEstadisticaMetas(int $idUsuario): void {
-        $sql = "INSERT INTO EstadisticasUso (id_usuario, metas_establecidas)
-                VALUES (:u, 1)
-                ON DUPLICATE KEY UPDATE metas_establecidas = metas_establecidas + 1";
-        $this->db->prepare($sql)->execute([':u'=>$idUsuario]);
     }
 }

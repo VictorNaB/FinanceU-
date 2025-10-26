@@ -1,6 +1,7 @@
 <?php
 require_once 'modelo/Metas.php';
 
+
 class ControladorMeta {
     private $modelo;
 
@@ -17,18 +18,18 @@ class ControladorMeta {
         }
 
         $idUsuario = (int)$_SESSION['id_usuario'];
-        $nombre = trim($_POST['nombre'] ?? '');
+        $nombre = trim($_POST['titulo_meta'] ?? '');
         $montoObjetivo = (float)($_POST['monto_objetivo'] ?? 0);
         $fechaLimite = $_POST['fecha_limite'] ?? date('Y-m-d');
+        $descripcion = trim($_POST['descripcion'] ?? '');
+
 
         if ($nombre === '' || $montoObjetivo <= 0) {
             echo "Datos inválidos"; exit;
         }
 
         try {
-            $this->modelo->crearMeta($idUsuario, $nombre, $montoObjetivo, $fechaLimite);
-            header('Location: index.php?action=app&page=metas');
-            $this->modelo->incrementarEstadisticaMetas($idUsuario);
+            $this->modelo->crearMeta($idUsuario, $nombre, $montoObjetivo, $fechaLimite,$descripcion);
             header('Location: index.php?action=app&page=metas');
             exit;
         } catch (Exception $e) {
@@ -98,4 +99,3 @@ class ControladorMeta {
         }
     }
 }
-?>
