@@ -140,21 +140,21 @@
                         <label for="reminder-type">Tipo</label>
                         <select id="reminder-type" name="type" required>
                             <option value="">Selecciona el tipo</option>
-                            <option value="payment">Pago</option>
-                            <option value="income">Ingreso Esperado</option>
-                            <option value="goal">Meta Financiera</option>
-                            <option value="other">Otro</option>
+                            <option value="Pago">Pago</option>
+                            <option value="Ingreso Esperado">Ingreso Esperado</option>
+                            <option value="Meta Financiera">Meta Financiera</option>
+                            <option value="Otro">Otro</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label for="reminder-recurring">Recurrente</label>
                         <select id="reminder-recurring" name="recurring">
-                            <option value="none">No recurrente</option>
-                            <option value="daily">Diario</option>
-                            <option value="weekly">Semanal</option>
-                            <option value="monthly">Mensual</option>
-                            <option value="yearly">Anual</option>
+                            <option value="No recurrente">No recurrente</option>
+                            <option value="Diario">Diario</option>
+                            <option value="Semanal">Semanal</option>
+                            <option value="Mensual">Mensual</option>
+                            <option value="Anual">Anual</option>
                         </select>
                     </div>
 
