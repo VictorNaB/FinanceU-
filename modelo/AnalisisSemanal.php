@@ -11,7 +11,7 @@ class AnalisisSemanal
     }
 
     /** Devuelve [semana_inicio, semana_fin] (domingo a sábado) para una fecha Y-m-d */
-    private function rangoSemana(string $fecha): array
+    private function rangoSemana(string $fecha)
     {
         $d = new DateTimeImmutable($fecha);
         // Lunes de esta semana
@@ -25,7 +25,7 @@ class AnalisisSemanal
      * Acumula monto en la semana:
      *  $idTipo: 1 = ingreso, 2 = gasto (ajústalo a tu catálogo)
      */
-    public function acumular(int $idUsuario, string $fecha, int $idTipo, float $monto): bool
+    public function acumular(int $idUsuario, string $fecha, int $idTipo, float $monto)
     {
         list($semanaInicio, $semanaFin) = $this->rangoSemana($fecha);
 
@@ -63,11 +63,10 @@ class AnalisisSemanal
         return $stmt->execute();
     }
 
-    public function recalcularSemana(int $idUsuario, string $fecha): bool
+    public function recalcularSemana(int $idUsuario, string $fecha)
     {
         list($semanaInicio, $semanaFin) = $this->rangoSemana($fecha);
 
-        // 1️⃣ Consultamos los totales reales desde la tabla de transacciones
         $sql = "SELECT
               SUM(CASE WHEN idtipo_transaccion = 1 THEN monto ELSE 0 END) AS ingresos,
               SUM(CASE WHEN idtipo_transaccion = 2 THEN monto ELSE 0 END) AS gastos
@@ -82,7 +81,6 @@ class AnalisisSemanal
         $gastos   = (float)($res['gastos'] ?? 0);
         $balance  = $ingresos - $gastos;
 
-        // 2️⃣ Actualizamos o insertamos los totales en AnalisisSemanal
         $sql2 = "INSERT INTO AnalisisSemanal (id_usuario, semana_inicio, semana_fin, ingresos_totales, gastos_totales, balance)
              VALUES (?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
@@ -93,5 +91,32 @@ class AnalisisSemanal
         $stmt2->bind_param("issddd", $idUsuario, $semanaInicio, $semanaFin, $ingresos, $gastos, $balance);
 
         return $stmt2->execute();
+    }
+
+    public function getSemanaActual(int $idUsuario, string $fecha): ?array
+    {
+        list($ini, $fin) = $this->rangoSemana($fecha);
+        $sql = "SELECT id_usuario, semana_inicio, semana_fin,
+                       ingresos_totales, gastos_totales, balance
+                  FROM AnalisisSemanal
+                 WHERE id_usuario=? AND semana_inicio=?";
+        $stmt = $this->cn->prepare($sql);
+        $stmt->bind_param("is", $idUsuario, $ini);
+        $stmt->execute();
+        $res = $stmt->get_result()->fetch_assoc();
+        return $res ?: null;
+    }
+
+    public function getUltimasSemanas(int $idUsuario, int $n = 8): array
+    {
+        $sql = "SELECT semana_inicio, semana_fin, ingresos_totales, gastos_totales, balance
+                  FROM AnalisisSemanal
+                 WHERE id_usuario=?
+              ORDER BY semana_inicio DESC
+                 LIMIT ?";
+        $stmt = $this->cn->prepare($sql);
+        $stmt->bind_param("ii", $idUsuario, $n);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
     }
 }

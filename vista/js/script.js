@@ -332,16 +332,14 @@ const updateRecentTransactions = () => {
       (t) => `
     <div class="transaction-item" style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--border);">
       <div>
-        <div style="font-weight:var(--font-weight-medium);">${
-          t.description
+        <div style="font-weight:var(--font-weight-medium);">${t.description
         }</div>
         <div style="font-size:.875rem;color:var(--muted-foreground);">${formatDate(
           t.date
         )} • ${getCategoryName(t.category)}</div>
       </div>
-      <div class="transaction-amount ${
-        t.type
-      }" style="font-weight:var(--font-weight-medium);">
+      <div class="transaction-amount ${t.type
+        }" style="font-weight:var(--font-weight-medium);">
         ${t.type === "income" ? "+" : "-"}${formatCurrency(t.amount)}
       </div>
     </div>
@@ -366,12 +364,11 @@ const updateGoalsProgress = () => {
       return `
       <div style="margin-bottom:1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-          <span style="font-weight:var(--font-weight-medium);">${
-            goal.title
-          }</span>
+          <span style="font-weight:var(--font-weight-medium);">${goal.title
+        }</span>
           <span style="font-size:.875rem;color:var(--muted-foreground);">${pct.toFixed(
-            0
-          )}%</span>
+          0
+        )}%</span>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
       </div>
@@ -489,20 +486,16 @@ const updateTransactionsList = () => {
       <td>${formatDate(t.date)}</td>
       <td>${t.description}</td>
       <td>${getCategoryName(t.category)}</td>
-      <td><span class="transaction-type ${t.type}">${
-        t.type === "income" ? "Ingreso" : "Gasto"
-      }</span></td>
-      <td><span class="transaction-amount ${t.type}">${
-        t.type === "income" ? "+" : "-"
-      }${formatCurrency(t.amount)}</span></td>
+      <td><span class="transaction-type ${t.type}">${t.type === "income" ? "Ingreso" : "Gasto"
+        }</span></td>
+      <td><span class="transaction-amount ${t.type}">${t.type === "income" ? "+" : "-"
+        }${formatCurrency(t.amount)}</span></td>
       <td>
         <div class="transaction-actions">
-          <button class="btn-icon" onclick="editTransaction('${
-            t.id
-          }')"><i class="fas fa-edit"></i></button>
-          <button class="btn-icon danger" onclick="deleteTransaction('${
-            t.id
-          }')"><i class="fas fa-trash"></i></button>
+          <button class="btn-icon" onclick="editTransaction('${t.id
+        }')"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon danger" onclick="deleteTransaction('${t.id
+        }')"><i class="fas fa-trash"></i></button>
         </div>
       </td>
     </tr>
@@ -645,14 +638,12 @@ const updatePocketsList = () => {
       return `
       <div class="pocket-card">
         <div class="pocket-header">
-          <div class="pocket-icon color-${
-            p.color
-          }"><i class="fas fa-${getIconClass(p.icon)}"></i></div>
-          <div class="pocket-info"><h3>${
-            p.name
-          }</h3><div class="pocket-target">Meta: ${formatCurrency(
-        p.target
-      )}</div></div>
+          <div class="pocket-icon color-${p.color
+        }"><i class="fas fa-${getIconClass(p.icon)}"></i></div>
+          <div class="pocket-info"><h3>${p.name
+        }</h3><div class="pocket-target">Meta: ${formatCurrency(
+          p.target
+        )}</div></div>
         </div>
         <div class="pocket-progress">
           <div class="pocket-amount">${formatCurrency(p.current)}</div>
@@ -660,15 +651,12 @@ const updatePocketsList = () => {
           <div class="progress-percentage">${pct.toFixed(1)}% completado</div>
         </div>
         <div class="pocket-actions">
-          <button class="btn-primary" onclick="openAddMoneyModal('${
-            p.id
-          }')"><i class="fas fa-plus"></i> Agregar</button>
-          <button class="btn-secondary" onclick="editPocket('${
-            p.id
-          }')"><i class="fas fa-edit"></i></button>
-          <button class="btn-danger" onclick="deletePocket('${
-            p.id
-          }')"><i class="fas fa-trash"></i></button>
+          <button class="btn-primary" onclick="openAddMoneyModal('${p.id
+        }')"><i class="fas fa-plus"></i> Agregar</button>
+          <button class="btn-secondary" onclick="editPocket('${p.id
+        }')"><i class="fas fa-edit"></i></button>
+          <button class="btn-danger" onclick="deletePocket('${p.id
+        }')"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `;
@@ -830,29 +818,25 @@ const updateGoalsList = () => {
       <div class="goal-card">
         <div class="goal-header">
           <h3 class="goal-title">${goal.title}</h3>
-          <div class="goal-deadline">${
-            daysLeft > 0 ? `${daysLeft} días restantes` : "Vencida"
-          } • ${formatDate(goal.deadline)}</div>
+          <div class="goal-deadline">${daysLeft > 0 ? `${daysLeft} días restantes` : "Vencida"
+        } • ${formatDate(goal.deadline)}</div>
         </div>
         <div class="goal-amount">
           <span class="goal-current">${formatCurrency(
-            goal.currentAmount || 0
-          )}</span>
+          goal.currentAmount || 0
+        )}</span>
           <span class="goal-target">de ${formatCurrency(
-            goal.targetAmount
-          )}</span>
+          goal.targetAmount
+        )}</span>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${percentage}%;"></div></div>
         <div class="goal-actions">
-          <button class="btn-primary" onclick="openAddProgressModal('${
-            goal.id
-          }')"><i class="fas fa-plus"></i> Progreso</button>
-          <button class="btn-secondary" onclick="editGoal('${
-            goal.id
-          }')"><i class="fas fa-edit"></i></button>
-          <button class="btn-danger" onclick="deleteGoal('${
-            goal.id
-          }')"><i class="fas fa-trash"></i></button>
+          <button class="btn-primary" onclick="openAddProgressModal('${goal.id
+        }')"><i class="fas fa-plus"></i> Progreso</button>
+          <button class="btn-secondary" onclick="editGoal('${goal.id
+        }')"><i class="fas fa-edit"></i></button>
+          <button class="btn-danger" onclick="deleteGoal('${goal.id
+        }')"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `;
@@ -988,88 +972,114 @@ const addProgressToGoal = (amount) => {
   }
 };
 
-// Analysis Functions
+function hydrateWeeklyFromServer() {
+  if (!window.weeklySummary) return;
+  const inc = document.getElementById('weekly-income');
+  const exp = document.getElementById('weekly-expenses');
+  const bal = document.getElementById('weekly-balance');
+  if (!inc || !exp || !bal) return;
+
+  const toCOP = (n) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
+
+  inc.textContent = toCOP(parseFloat(window.weeklySummary.ingresos_totales || 0));
+  exp.textContent = toCOP(parseFloat(window.weeklySummary.gastos_totales || 0));
+  const balance = parseFloat(window.weeklySummary.balance || 0);
+  bal.textContent = toCOP(balance);
+  bal.className = `stat-value ${balance >= 0 ? 'income' : 'expense'}`;
+}
+
+// Llama esto al cargar la página y/o dentro de updateAnalysis():
+document.addEventListener('DOMContentLoaded', () => {
+  hydrateWeeklyFromServer();
+});
+
 const updateAnalysis = () => {
-  updateWeeklyStats();
+  hydrateWeeklyFromServer();
+  //updateWeeklyStats();
   updateDailyExpensesChart();
   updateTopCategories();
   updateComparison();
 };
 
 const updateWeeklyStats = () => {
-  const inc = document.getElementById("weekly-income");
-  const exp = document.getElementById("weekly-expenses");
-  const bal = document.getElementById("weekly-balance");
+  // Si el backend ya inyectó weeklySummary, no recalcular para no sobrescribir
+  if (window.weeklySummary) return;
+
+  const inc = document.getElementById('weekly-income');
+  const exp = document.getElementById('weekly-expenses');
+  const bal = document.getElementById('weekly-balance');
   if (!inc || !exp || !bal) return;
 
   const now = new Date();
   const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 6);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
 
-  const weekly = appState.transactions.filter((t) => {
+  const weekly = appState.transactions.filter(t => {
     const d = new Date(t.date);
     return d >= weekStart && d <= weekEnd;
   });
 
-  const weeklyIncome = weekly
-    .filter((t) => t.type === "income")
-    .reduce((s, t) => s + t.amount, 0);
-  const weeklyExpenses = weekly
-    .filter((t) => t.type === "expense")
-    .reduce((s, t) => s + t.amount, 0);
+  const weeklyIncome = weekly.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+  const weeklyExpenses = weekly.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
   const weeklyBalance = weeklyIncome - weeklyExpenses;
 
-  inc.textContent = formatCurrency(weeklyIncome);
-  exp.textContent = formatCurrency(weeklyExpenses);
-  bal.textContent = formatCurrency(weeklyBalance);
-  bal.className = `stat-value ${weeklyBalance >= 0 ? "income" : "expense"}`;
+  const toCOP = n => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0);
+
+  inc.textContent = toCOP(weeklyIncome);
+  exp.textContent = toCOP(weeklyExpenses);
+  bal.textContent = toCOP(weeklyBalance);
+  bal.className = `stat-value ${weeklyBalance >= 0 ? 'income' : 'expense'}`;
+};
+
+
+const getServerWeekRange = () => {
+  if (!window.weeklySummary) return null;
+  return {
+    start: new Date(window.weeklySummary.semana_inicio), // p.ej. 2025-10-27
+    end: new Date(window.weeklySummary.semana_fin)     // p.ej. 2025-11-02
+  };
 };
 
 const updateDailyExpensesChart = () => {
-  const canvas = document.getElementById("daily-expenses-chart");
+  const canvas = document.getElementById('daily-expenses-chart');
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const range = getServerWeekRange();
+  if (!range) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
 
-  const dailyData = [];
-  const today = new Date();
-
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(today);
-    date.setDate(date.getDate() - i);
-    const iso = date.toISOString().split("T")[0];
-    const dayExpenses = appState.transactions
-      .filter((t) => t.type === "expense" && t.date === iso)
+  // genera los 7 días exactos según el backend
+  const days = [];
+  const cursor = new Date(range.start);
+  while (cursor <= range.end) {
+    const iso = cursor.toISOString().split('T')[0];
+    const expenses = appState.transactions
+      .filter(t => t.type === 'expense' && t.date === iso)
       .reduce((s, t) => s + t.amount, 0);
-    dailyData.push({
-      day: date.toLocaleDateString("es-CO", { weekday: "short" }),
-      expenses: dayExpenses,
+    days.push({
+      label: cursor.toLocaleDateString('es-CO', { weekday: 'short' }),
+      value: expenses
     });
+    cursor.setDate(cursor.getDate() + 1);
   }
 
   new Chart(ctx, {
-    type: "bar",
+    type: 'bar',
     data: {
-      labels: dailyData.map((d) => d.day),
-      datasets: [
-        {
-          label: "Gastos Diarios",
-          data: dailyData.map((d) => d.expenses),
-          backgroundColor: "#ef4444",
-          borderColor: "#dc2626",
-          borderWidth: 1,
-        },
-      ],
+      labels: days.map(d => d.label),
+      datasets: [{
+        label: 'Gastos Diarios',
+        data: days.map(d => d.value),
+        backgroundColor: '#ef4444',
+        borderColor: '#dc2626',
+        borderWidth: 1
+      }]
     },
     options: {
       responsive: true,
-      scales: {
-        y: { beginAtZero: true, ticks: { callback: (v) => formatCurrency(v) } },
-      },
-      plugins: { legend: { display: false } },
-    },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } },
+      plugins: { legend: { display: false } }
+    }
   });
 };
 
@@ -1147,25 +1157,24 @@ const updateComparison = () => {
   container.innerHTML = `
     <div style="text-align:center;">
       <div style="font-size:2rem;font-weight:var(--font-weight-medium);margin-bottom:1rem;">
-        <span style="color:${
-          diff >= 0 ? "var(--destructive)" : "var(--chart-4)"
-        };">${diff >= 0 ? "+" : ""}${formatCurrency(diff)}</span>
+        <span style="color:${diff >= 0 ? "var(--destructive)" : "var(--chart-4)"
+    };">${diff >= 0 ? "+" : ""}${formatCurrency(diff)}</span>
       </div>
       <div style="color:var(--muted-foreground);">${Math.abs(pct).toFixed(
-        1
-      )}% ${diff >= 0 ? "más" : "menos"} que la semana anterior</div>
+      1
+    )}% ${diff >= 0 ? "más" : "menos"} que la semana anterior</div>
       <div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:center;">
         <div>
           <div style="font-size:.875rem;color:var(--muted-foreground);">Semana Anterior</div>
           <div style="font-size:1.25rem;font-weight:var(--font-weight-medium);">${formatCurrency(
-            prev
-          )}</div>
+      prev
+    )}</div>
         </div>
         <div>
           <div style="font-size:.875rem;color:var(--muted-foreground);">Semana Actual</div>
           <div style="font-size:1.25rem;font-weight:var(--font-weight-medium);">${formatCurrency(
-            cur
-          )}</div>
+      cur
+    )}</div>
         </div>
       </div>
     </div>
@@ -1252,26 +1261,22 @@ const updateRemindersList = () => {
       <div class="reminder-item">
         <div class="reminder-title">${r.title}</div>
         <div class="reminder-date">
-          ${formatDate(r.date)} ${
-        daysUntil === 0
+          ${formatDate(r.date)} ${daysUntil === 0
           ? "(Hoy)"
           : daysUntil === 1
-          ? "(Mañana)"
-          : `(${daysUntil} días)`
-      }
+            ? "(Mañana)"
+            : `(${daysUntil} días)`
+        }
         </div>
-        ${
-          r.amount
-            ? `<div class="reminder-amount">${formatCurrency(r.amount)}</div>`
-            : ""
+        ${r.amount
+          ? `<div class="reminder-amount">${formatCurrency(r.amount)}</div>`
+          : ""
         }
         <div style="margin-top:.5rem;">
-          <button class="btn-secondary" onclick="editReminder('${
-            r.id
-          }')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-edit"></i></button>
-          <button class="btn-danger" onclick="deleteReminder('${
-            r.id
-          }')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-trash"></i></button>
+          <button class="btn-secondary" onclick="editReminder('${r.id
+        }')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-edit"></i></button>
+          <button class="btn-danger" onclick="deleteReminder('${r.id
+        }')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `;
@@ -1588,23 +1593,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-// --- GOAL FORM ---
-const goalForm = document.getElementById('goal-form');
-if (goalForm) {
-  const hasAction = goalForm.getAttribute('action'); // "index.php?action=crearMeta"
-  if (!hasAction) {
-    goalForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const fd = new FormData(goalForm);
-      saveGoal({
-        title:        fd.get('titulo_meta'),
-        targetAmount: fd.get('monto_objetivo'),
-        deadline:     fd.get('fecha_limite'),
-        description:  fd.get('descripcion')
+  // --- GOAL FORM ---
+  const goalForm = document.getElementById('goal-form');
+  if (goalForm) {
+    const hasAction = goalForm.getAttribute('action'); // "index.php?action=crearMeta"
+    if (!hasAction) {
+      goalForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const fd = new FormData(goalForm);
+        saveGoal({
+          title: fd.get('titulo_meta'),
+          targetAmount: fd.get('monto_objetivo'),
+          deadline: fd.get('fecha_limite'),
+          description: fd.get('descripcion')
+        });
       });
-    });
+    }
   }
-}
 
 
   [
@@ -1690,6 +1695,8 @@ if (goalForm) {
     }
   });
 });
+
+
 
 // Expose functions to global scope for HTML onclick handlers
 window.showLanding = showLanding;

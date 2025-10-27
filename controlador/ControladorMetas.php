@@ -74,7 +74,7 @@ class ControladorMeta {
         }
 
         try {
-            $this->modelo->eliminarMeta($idMeta);
+            
             header('Location: index.php?action=app&page=metas');
             exit;
         } catch (Exception $e) {
@@ -91,7 +91,7 @@ class ControladorMeta {
         }
 
         try {
-            $this->modelo->registrarProgreso($idMeta, $monto);
+           
             header('Location: index.php?action=app&page=metas');
             exit;
         } catch (Exception $e) {

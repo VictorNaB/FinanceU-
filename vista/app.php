@@ -112,6 +112,28 @@ if ($page === 'transacciones') {
       $file = __DIR__ . "/{$page}.php";
       if (is_file($file)) {
         include $file;
+        if ($page === 'analisis') {
+          if (session_status() === PHP_SESSION_NONE) session_start();
+          require_once __DIR__ . '/../modelo/AnalisisSemanal.php';
+
+          $as = new AnalisisSemanal();
+
+          // Recalcula la semana del día actual (en la zona del servidor)
+          $hoy = date('Y-m-d');
+          $as->recalcularSemana((int)$_SESSION['id_usuario'], $hoy);
+
+          $semanaActual = $as->getSemanaActual((int)$_SESSION['id_usuario'], $hoy);
+          $ultimas      = $as->getUltimasSemanas((int)$_SESSION['id_usuario'], 8);
+
+          echo '<script>',
+          'window.weeklySummary = ', json_encode($semanaActual ?: []), ';',
+          'window.weeklySeries  = ', json_encode($ultimas), ';',
+          // dispara la hidratación apenas cargue el DOM
+          'document.addEventListener("DOMContentLoaded", function(){',
+          'if (window.hydrateWeeklyFromServer) window.hydrateWeeklyFromServer();',
+          '});',
+          '</script>';
+        }
       } else {
         echo "<section class='content-section'><h2>Vista no encontrada</h2><p>{$page}.php</p></section>";
       }
@@ -121,7 +143,7 @@ if ($page === 'transacciones') {
     </main>
   </div>
 
-  <script src="vista/js/script.js?v=9"></script>
+  <script src="vista/js/script.js?v=10"></script>
 
 </body>
 

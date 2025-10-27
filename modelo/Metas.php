@@ -53,45 +53,11 @@ class Meta {
     }
 
     
-    public function eliminarMeta(int $idMeta){
-        try {
-            $this->db->beginTransaction();
-
-            $stmt1 = $this->conexion->prepare("DELETE FROM metas_progreso WHERE id_meta = :id");
-            $stmt1->execute([':id' => $idMeta]);
-
-            $stmt2 = $this->conexion->prepare("DELETE FROM metas WHERE id = :id");
-            $stmt2->execute([':id' => $idMeta]);
-
-            $this->conexion->commit();
-            return true;
-        } catch (Exception $e) {
-            $this->conexion->rollBack();
-            throw $e;
-        }
-    }
+    
 
     
-    public function registrarProgreso(int $idMeta, float $monto, ?string $fecha = null, ?string $nota = null){
-        $sql = "INSERT INTO metas_progreso (id_meta, monto, fecha, nota, creado_en)
-                VALUES (:id_meta, :monto, :fecha, :nota, NOW())";
-        $stmt = $this->conexion->prepare($sql);
-        $stmt->execute([
-            ':id_meta' => $idMeta,
-            ':monto'   => $monto,
-            ':fecha'   => $fecha ?: date('Y-m-d'),
-            ':nota'    => $nota
-        ]);
-        return (int)$this->conexion->lastInsertId();
-    }
+   
 
     
-    public function obtenerProgresos(int $idMeta){
-        $sql = "SELECT * FROM metas_progreso
-                 WHERE id_meta = :id_meta
-              ORDER BY fecha DESC, id DESC";
-        $stmt = $this->conexion->prepare($sql);
-        $stmt->execute([':id_meta' => $idMeta]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
+   
 }
