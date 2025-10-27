@@ -31,7 +31,82 @@
                 <h3>Próximos Recordatorios</h3>
             </div>
             <div class="card-content">
-                <div id="reminders-list" class="reminders-list"></div>
+                <?php
+                if (session_status() === PHP_SESSION_NONE) session_start();
+                require_once __DIR__ . '/../modelo/RecordatorioModelo.php';
+
+                // marcamos que esta lista fue renderizada por el servidor para que el JS no la sobreescriba
+                echo '<div id="reminders-list" class="reminders-list" data-server-rendered="1">';
+
+                if (!isset($_SESSION['id_usuario'])) {
+                    echo '<p class="text-center">Inicia sesión para ver tus recordatorios</p>';
+                } else {
+                    try {
+                        $model = new RecordatorioModelo();
+                        $proximos = $model->obtenerProximos((int)$_SESSION['id_usuario'], 10);
+                        if (empty($proximos)) {
+                            echo '<p class="text-center">No hay recordatorios próximos</p>';
+                        } else {
+                                    // helper para formato de fecha en español corto
+                                    function formatoFechaEsp($fecha)
+                                    {
+                                        $m = [
+                                            '01' => 'ene', '02' => 'feb', '03' => 'mar', '04' => 'abr', '05' => 'may', '06' => 'jun',
+                                            '07' => 'jul', '08' => 'ago', '09' => 'sep', '10' => 'oct', '11' => 'nov', '12' => 'dic'
+                                        ];
+                                        $d = new DateTime($fecha);
+                                        $dd = $d->format('j');
+                                        $mm = $d->format('m');
+                                        $yy = $d->format('Y');
+                                        return sprintf('%s de %s de %s', $dd, $m[$mm] ?? $mm, $yy);
+                                    }
+
+                                    foreach ($proximos as $r) {
+                                        $fecha_raw = $r['fecha'];
+                                        $fecha = htmlspecialchars($fecha_raw);
+                                        $titulo = htmlspecialchars($r['titulo']);
+                                        $monto_val = (isset($r['monto']) ? (float)$r['monto'] : 0.0);
+                                        $monto = $monto_val > 0 ? '$ ' . number_format($monto_val, 0, ',', '.') : '';
+                                        $idr = (int)$r['id_recordatorio'];
+                                        $desc = htmlspecialchars($r['descripcion'] ?? '');
+
+                                        // calcular días restantes
+                                        $hoy = new DateTimeImmutable(date('Y-m-d'));
+                                        $dobj = new DateTimeImmutable($fecha_raw);
+                                        $interval = $hoy->diff($dobj);
+                                        $dias = (int)$interval->format('%r%a');
+                                        if ($dias === 0) $diasTxt = '(Hoy)';
+                                        elseif ($dias === 1) $diasTxt = '(Mañana)';
+                                        elseif ($dias < 0) $diasTxt = '(' . abs($dias) . ' días ago)';
+                                        else $diasTxt = '(' . $dias . ' días)';
+
+                                        echo '<div class="reminder-item" '
+                                            . 'data-id="' . $idr . '" '
+                                            . 'data-title="' . $titulo . '" '
+                                            . 'data-date="' . $fecha . '" '
+                                            . 'data-amount="' . htmlspecialchars((string)$monto_val) . '" '
+                                            . 'data-description="' . $desc . '">';
+
+                                        echo '<div class="reminder-title">' . $titulo . '</div>';
+                                        echo '<div class="reminder-date">' . formatoFechaEsp($fecha_raw) . ' ' . $diasTxt . '</div>';
+                                        if ($monto !== '') {
+                                            echo '<div class="reminder-amount">' . $monto . '</div>';
+                                        }
+                                        echo '<div style="margin-top:.5rem;">';
+                                        echo '<button class="btn-secondary" onclick="editServerReminder(' . $idr . ')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-edit"></i></button> ';
+                                        echo '<button class="btn-danger" onclick="deleteServerReminder(' . $idr . ')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-trash"></i></button>';
+                                        echo '</div>';
+
+                                        echo '</div>';
+                                    }
+                        }
+                    } catch (Exception $e) {
+                        echo '<p class="text-center">Error cargando recordatorios</p>';
+                    }
+                }
+
+                echo '</div>';
+                ?>
             </div>
         </div>
     </div>

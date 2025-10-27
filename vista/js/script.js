@@ -1351,6 +1351,11 @@ const updateRemindersList = () => {
   const container = document.getElementById("reminders-list");
   if (!container) return;
 
+  // Si la lista fue renderizada por el servidor no la sobrescribimos desde JS
+  if (container.dataset && container.dataset.serverRendered === '1') {
+    return;
+  }
+
   const today = new Date();
   const in30 = new Date();
   in30.setDate(today.getDate() + 30);
@@ -1506,6 +1511,57 @@ const deleteReminder = (reminderId) => {
       "El recordatorio ha sido eliminado correctamente",
       "info"
     );
+  }
+};
+
+// --- Server-side edit/delete helpers ---
+const editServerReminder = (id) => {
+  // buscar el elemento renderizado server-side
+  const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
+  if (!el) return;
+  const title = el.dataset.title || '';
+  const amount = el.dataset.amount || '';
+  const date = el.dataset.date || '';
+  const type = el.dataset.type || '';
+  const recurring = el.dataset.recurring || '';
+  const description = el.dataset.description || '';
+
+  // rellenar modal
+  openReminderModal();
+  document.getElementById('reminder-title').value = title;
+  document.getElementById('reminder-amount').value = amount;
+  document.getElementById('reminder-date').value = date;
+  document.getElementById('reminder-type').value = type;
+  document.getElementById('reminder-recurring').value = recurring;
+  document.getElementById('reminder-description').value = description;
+
+  // marcar que estamos editando un record existente en servidor
+  appState.currentEditingServerId = id;
+  appState.currentEditingId = null; // no confundir con local ids
+  const titleEl = document.getElementById('reminder-modal-title');
+  if (titleEl) titleEl.textContent = 'Editar Recordatorio';
+};
+
+const deleteServerReminder = async (id) => {
+  if (!confirm('¿Eliminar este recordatorio en la base de datos?')) return;
+  try {
+    const target = '/FinanceU-/vista/RecordatorioVista.php?action=eliminar';
+    const res = await fetch(target, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ id: id })
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok && data && data.success) {
+      showToast('Recordatorio eliminado', 'El recordatorio se eliminó de la BD', 'success');
+      setTimeout(() => location.reload(), 600);
+    } else {
+      showToast('Error', (data && data.message) ? data.message : 'No se pudo eliminar', 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Error', 'No se pudo conectar con el servidor', 'error');
   }
 };
 
@@ -1755,15 +1811,42 @@ document.addEventListener("DOMContentLoaded", () => {
           icon: fd.get("icon"),
           color: fd.get("color"),
         });
-      if (id === "reminder-form")
-        saveReminder({
-          title: fd.get("title"),
-          amount: fd.get("amount"),
-          date: fd.get("date"),
-          type: fd.get("type"),
-          recurring: fd.get("recurring"),
-          description: fd.get("description"),
-        });
+      if (id === "reminder-form") {
+        // Enviar al servidor para persistir en la BD (crear o actualizar según estado)
+        (async () => {
+          try {
+            const base = '/FinanceU-/vista/RecordatorioVista.php';
+            const isEditServer = !!appState.currentEditingServerId;
+            const action = isEditServer ? 'actualizar' : 'crear';
+            const url = (window.location.pathname.replace(/\/index.php.*$/, '') || '/FinanceU-') + '/vista/RecordatorioVista.php?action=' + action;
+            const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=' + action;
+            const target = (location.pathname.indexOf('/FinanceU-') !== -1) ? endpoint : url;
+
+            // Si es edición en servidor, agregar id al formdata
+            if (isEditServer) fd.append('id', appState.currentEditingServerId);
+
+            const res = await fetch(target, {
+              method: 'POST',
+              body: fd,
+              credentials: 'same-origin'
+            });
+            const data = await res.json().catch(() => null);
+            if (res.ok && data && data.success) {
+              showToast(isEditServer ? 'Recordatorio actualizado' : 'Recordatorio creado', isEditServer ? 'El recordatorio se actualizó en la base de datos' : 'El recordatorio se guardó en la base de datos', 'success');
+              // Cerrar modal y recargar para que el listado server-side muestre el nuevo recordatorio
+              appState.currentEditingServerId = null;
+              closeReminderModal();
+              setTimeout(() => location.reload(), 700);
+            } else {
+              const msg = (data && data.message) ? data.message : 'Error al guardar el recordatorio';
+              showToast('Error', msg, 'error');
+            }
+          } catch (err) {
+            console.error(err);
+            showToast('Error', 'No se pudo conectar con el servidor', 'error');
+          }
+        })();
+      }
       if (id === "add-money-form") addMoneyToPocket(fd.get("amount"));
       if (id === "add-progress-form") addProgressToGoal(fd.get("amount"));
       if (id === "profile-form")
