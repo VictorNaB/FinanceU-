@@ -33,6 +33,16 @@ const formatDate = (date) => {
   });
 };
 
+const escapeHtml = (unsafe) => {
+  if (!unsafe) return '';
+  return String(unsafe)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
@@ -615,180 +625,6 @@ const clearFilters = () => {
   if (catEl) catEl.value = "all";
   if (dateEl) dateEl.value = "";
   updateTransactionsList();
-};
-
-// Pocket Functions
-const updatePocketsList = () => {
-  const container = document.getElementById("pockets-grid");
-  if (!container) return;
-
-  if (appState.pockets.length === 0) {
-    container.innerHTML = `
-      <div style="grid-column:1/-1;text-align:center;padding:2rem;">
-        <i class="fas fa-piggy-bank" style="font-size:3rem;color:var(--muted-foreground);margin-bottom:1rem;"></i>
-        <p>No tienes bolsillos de ahorro creados</p>
-        <p style="color:var(--muted-foreground);margin-bottom:1rem;">Crea tu primer bolsillo para empezar a ahorrar</p>
-        <button class="btn-primary" onclick="openPocketModal()"><i class="fas fa-plus"></i> Crear Bolsillo</button>
-      </div>
-    `;
-    return;
-  }
-
-  container.innerHTML = appState.pockets
-    .map((p) => {
-      const pct = Math.min((p.current / p.target) * 100, 100);
-      return `
-      <div class="pocket-card">
-        <div class="pocket-header">
-          <div class="pocket-icon color-${p.color
-        }"><i class="fas fa-${getIconClass(p.icon)}"></i></div>
-          <div class="pocket-info"><h3>${p.name
-        }</h3><div class="pocket-target">Meta: ${formatCurrency(
-          p.target
-        )}</div></div>
-        </div>
-        <div class="pocket-progress">
-          <div class="pocket-amount">${formatCurrency(p.current)}</div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
-          <div class="progress-percentage">${pct.toFixed(1)}% completado</div>
-        </div>
-        <div class="pocket-actions">
-          <button class="btn-primary" onclick="openAddMoneyModal('${p.id
-        }')"><i class="fas fa-plus"></i> Agregar</button>
-          <button class="btn-secondary" onclick="editPocket('${p.id
-        }')"><i class="fas fa-edit"></i></button>
-          <button class="btn-danger" onclick="deletePocket('${p.id
-        }')"><i class="fas fa-trash"></i></button>
-        </div>
-      </div>
-    `;
-    })
-    .join("");
-};
-
-const openPocketModal = (pocketId = null) => {
-  const modal = document.getElementById("pocket-modal");
-  const form = document.getElementById("pocket-form");
-  const title = document.getElementById("pocket-modal-title");
-  if (!form) return;
-
-  form.reset();
-  appState.currentEditingId = pocketId;
-
-  if (pocketId) {
-    const pocket = appState.pockets.find((p) => p.id === pocketId);
-    if (pocket) {
-      if (title) title.textContent = "Editar Bolsillo";
-      document.getElementById("pocket-name").value = pocket.name;
-      document.getElementById("pocket-target").value = pocket.target;
-      document.getElementById("pocket-icon").value = pocket.icon;
-      document.getElementById("pocket-color").value = pocket.color;
-    }
-  } else {
-    if (title) title.textContent = "Nuevo Bolsillo";
-  }
-  if (modal) modal.classList.add("active");
-};
-
-const closePocketModal = () => {
-  const modal = document.getElementById("pocket-modal");
-  if (modal) modal.classList.remove("active");
-  appState.currentEditingId = null;
-};
-
-const savePocket = (formData) => {
-  const pocketData = {
-    name: formData.name,
-    target: parseInt(formData.target),
-    icon: formData.icon,
-    color: formData.color,
-  };
-
-  if (appState.currentEditingId) {
-    const index = appState.pockets.findIndex(
-      (p) => p.id === appState.currentEditingId
-    );
-    if (index !== -1) {
-      appState.pockets[index] = { ...appState.pockets[index], ...pocketData };
-      showToast(
-        "Bolsillo actualizado",
-        "El bolsillo ha sido actualizado correctamente",
-        "success"
-      );
-    }
-  } else {
-    const newPocket = { id: generateId(), current: 0, ...pocketData };
-    appState.pockets.push(newPocket);
-    showToast(
-      "Bolsillo creado",
-      "El bolsillo ha sido creado correctamente",
-      "success"
-    );
-  }
-
-  updatePocketsList();
-  updateDashboard();
-  saveToStorage();
-  closePocketModal();
-};
-
-const editPocket = (pocketId) => openPocketModal(pocketId);
-
-const deletePocket = (pocketId) => {
-  if (confirm("¿Estás seguro de que quieres eliminar este bolsillo?")) {
-    appState.pockets = appState.pockets.filter((p) => p.id !== pocketId);
-    updatePocketsList();
-    updateDashboard();
-    saveToStorage();
-    showToast(
-      "Bolsillo eliminado",
-      "El bolsillo ha sido eliminado correctamente",
-      "info"
-    );
-  }
-};
-
-const openAddMoneyModal = (pocketId) => {
-  const modal = document.getElementById("add-money-modal");
-  const form = document.getElementById("add-money-form");
-  if (!form) return;
-  form.reset();
-  appState.currentEditingId = pocketId;
-  if (modal) modal.classList.add("active");
-};
-
-const closeAddMoneyModal = () => {
-  const modal = document.getElementById("add-money-modal");
-  if (modal) modal.classList.remove("active");
-  appState.currentEditingId = null;
-};
-
-const addMoneyToPocket = (amount) => {
-  const idx = appState.pockets.findIndex(
-    (p) => p.id === appState.currentEditingId
-  );
-  if (idx !== -1) {
-    appState.pockets[idx].current += parseInt(amount);
-    const pocket = appState.pockets[idx];
-    appState.transactions.push({
-      id: generateId(),
-      type: "expense",
-      description: `Ahorro en ${pocket.name}`,
-      amount: parseInt(amount),
-      category: "savings",
-      date: new Date().toISOString().split("T")[0],
-    });
-    updatePocketsList();
-    updateTransactionsList();
-    updateDashboard();
-    saveToStorage();
-    closeAddMoneyModal();
-    showToast(
-      "Dinero agregado",
-      `Se agregaron ${formatCurrency(amount)} al bolsillo`,
-      "success"
-    );
-  }
 };
 
 function toCOP(n) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0); }
@@ -1554,8 +1390,12 @@ const deleteServerReminder = async (id) => {
     });
     const data = await res.json().catch(() => null);
     if (res.ok && data && data.success) {
-      showToast('Recordatorio eliminado', 'El recordatorio se eliminó de la BD', 'success');
-      setTimeout(() => location.reload(), 600);
+        showToast('Recordatorio eliminado', 'El recordatorio se eliminó de la BD', 'success');
+        // eliminar elemento del DOM si existe
+        const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
+        if (el) el.remove();
+        // refrescar recordatorios desde servidor y actualizar calendario
+        await refreshRemindersFromServer();
     } else {
       showToast('Error', (data && data.message) ? data.message : 'No se pudo eliminar', 'error');
     }
@@ -1564,6 +1404,69 @@ const deleteServerReminder = async (id) => {
     showToast('Error', 'No se pudo conectar con el servidor', 'error');
   }
 };
+
+  const refreshRemindersFromServer = async () => {
+    try {
+      const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=getProximos';
+      const res = await fetch(endpoint, { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const arr = await res.json().catch(() => null);
+      if (!Array.isArray(arr)) return;
+      // Map server objects to client reminder shape
+      appState.reminders = arr.map((r) => ({
+        id: r.id_recordatorio?.toString() || (r.id_recordatorio ?? ''),
+        title: r.titulo || r.title || '',
+        amount: r.monto !== undefined ? Number(r.monto) : null,
+        date: r.fecha || '',
+        type: r.idtipo_recordatorio || r.type || '',
+        recurring: r.idrecurrente || r.recurring || '',
+        description: r.descripcion || r.description || ''
+      }));
+      // actualizar calendario visual
+      updateCalendarDisplay();
+      // Reconstruir la lista de recordatorios (lado derecho) con los datos del servidor
+      const container = document.getElementById('reminders-list');
+      if (container) {
+        const itemsHtml = arr
+          .map((r) => {
+            const title = r.titulo || '';
+            const montoVal = r.monto !== undefined ? Number(r.monto) : 0;
+            const monto = montoVal > 0 ? `\$ ${montoVal.toLocaleString('es-CO')}` : '';
+            const fechaRaw = r.fecha || '';
+            // calcular dias
+            const today = new Date();
+            const d = new Date(fechaRaw + 'T00:00:00');
+            const diffDays = Math.ceil((d - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / (1000 * 60 * 60 * 24));
+            let diasTxt = '';
+            if (diffDays === 0) diasTxt = '(Hoy)';
+            else if (diffDays === 1) diasTxt = '(Mañana)';
+            else if (diffDays < 0) diasTxt = `(${Math.abs(diffDays)} días ago)`;
+            else diasTxt = `(${diffDays} días)`;
+
+            // formato fecha corto similar a servidor
+            const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+            const fr = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+
+            return `
+              <div class="reminder-item" data-id="${r.id_recordatorio}">
+                <div class="reminder-title">${escapeHtml(title)}</div>
+                <div class="reminder-date">${fr} ${diasTxt}</div>
+                ${monto ? `<div class="reminder-amount">${monto}</div>` : ''}
+                <div style="margin-top:.5rem;">
+                  <button class="btn-secondary" onclick="editServerReminder(${r.id_recordatorio})" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-edit"></i></button>
+                  <button class="btn-danger" onclick="deleteServerReminder(${r.id_recordatorio})" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-trash"></i></button>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+        container.innerHTML = itemsHtml || '<p class="text-center">No hay recordatorios próximos</p>';
+        container.dataset.serverRendered = '1';
+      }
+    } catch (e) {
+      console.error('Error refrescando recordatorios:', e);
+    }
+  };
 
 // Profile Functions
 const updateProfile = () => {
@@ -1836,7 +1739,8 @@ document.addEventListener("DOMContentLoaded", () => {
               // Cerrar modal y recargar para que el listado server-side muestre el nuevo recordatorio
               appState.currentEditingServerId = null;
               closeReminderModal();
-              setTimeout(() => location.reload(), 700);
+              // refrescar lista y calendario desde servidor sin recargar la página
+              await refreshRemindersFromServer();
             } else {
               const msg = (data && data.message) ? data.message : 'Error al guardar el recordatorio';
               showToast('Error', msg, 'error');
