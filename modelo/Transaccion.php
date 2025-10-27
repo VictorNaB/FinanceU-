@@ -1,15 +1,18 @@
 <?php
 require_once 'modelo/Conexion.php';
 require_once __DIR__ . '/../modelo/Transaccion.php';
+require_once __DIR__ . '/../modelo/EstadisticasUso.php';
 
 
 class Transaccion
 {
     private $conexion;
+    private $eu;
 
     public function __construct()
     {
         $this->conexion = (new Conexion())->getConexion();
+        $this->eu = new EstadisticasUso();
     }
 
 
@@ -23,8 +26,9 @@ class Transaccion
         $stmt2 = $this->conexion->prepare("INSERT INTO EstadisticasUso (id_usuario, transacciones_registradas) VALUES (?, ?)
                 ON DUPLICATE KEY UPDATE transacciones_registradas = transacciones_registradas + 1");
         $stmt2->bind_param("ii", $id_usuario, $transaccionesRegistradas);
+        $dias = $this->diasConsecutivos($id_usuario);
+        $this->eu->setDiasConsecutivos($id_usuario, (int)$dias);
         return $stmt2->execute();
-
         
     }
 

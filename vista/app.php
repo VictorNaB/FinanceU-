@@ -37,7 +37,7 @@ if ($page === 'transacciones') {
 </head>
 
 <body>
-  <div id="main-app" class="page">
+  <div id="main-app" class="page active">
 
     <!-- SIDEBAR -->
     <nav class="sidebar" id="sidebar">
@@ -112,27 +112,121 @@ if ($page === 'transacciones') {
       $file = __DIR__ . "/{$page}.php";
       if (is_file($file)) {
         include $file;
+
+        if ($page === 'perfil') {
+          require_once __DIR__ . '/../modelo/EstadisticasUso.php';
+          $eu = new EstadisticasUso();
+          $stats = $eu->getByUsuario((int)$_SESSION['id_usuario']);
+
+          echo '<script>',
+          'window.usageStats = ', json_encode($stats), ';',
+          'document.addEventListener("DOMContentLoaded", function(){',
+          'if (window.updateProfile) window.updateProfile();',
+          '});',
+          '</script>';
+        }
+
         if ($page === 'analisis') {
-          if (session_status() === PHP_SESSION_NONE) session_start();
           require_once __DIR__ . '/../modelo/AnalisisSemanal.php';
-
-          $as = new AnalisisSemanal();
-
-          // Recalcula la semana del día actual (en la zona del servidor)
+          $as  = new AnalisisSemanal();
           $hoy = date('Y-m-d');
-          $as->recalcularSemana((int)$_SESSION['id_usuario'], $hoy);
 
+          // ya lo tenías:
+          $as->recalcularSemana((int)$_SESSION['id_usuario'], $hoy);
           $semanaActual = $as->getSemanaActual((int)$_SESSION['id_usuario'], $hoy);
           $ultimas      = $as->getUltimasSemanas((int)$_SESSION['id_usuario'], 8);
+
+          // NUEVO:
+          $gastosDia    = $as->getGastosPorDiaSemana((int)$_SESSION['id_usuario'], $hoy);
+          $topMes       = $as->getTopCategoriasMes((int)$_SESSION['id_usuario'], date('Y-m'));
+          $cmp          = $as->getGastosSemanasActualPrev((int)$_SESSION['id_usuario'], $hoy);
 
           echo '<script>',
           'window.weeklySummary = ', json_encode($semanaActual ?: []), ';',
           'window.weeklySeries  = ', json_encode($ultimas), ';',
-          // dispara la hidratación apenas cargue el DOM
+          'window.dailyExpenses = ', json_encode($gastosDia), ';',
+          'window.topCategories = ', json_encode($topMes), ';',
+          'window.weekCompare   = ', json_encode($cmp), ';',
+          // hidrata al cargar
           'document.addEventListener("DOMContentLoaded", function(){',
           'if (window.hydrateWeeklyFromServer) window.hydrateWeeklyFromServer();',
+          'if (typeof updateAnalysis === "function") updateAnalysis();',
           '});',
           '</script>';
+        }
+
+        if ($page === 'dashboard') {
+          try {
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            $uid = (int)($_SESSION['id_usuario'] ?? 0);
+
+            $tot = ['ingresos' => 0.0, 'gastos' => 0.0, 'balance' => 0.0, 'ahorro' => 0.0];
+            $cats = [];
+            $recent = [];
+            $goals = [];
+            $errors = [];
+
+            require_once __DIR__ . '/../modelo/Dashboard.php';
+            $dash = new Dashboard();
+
+            // rango mes actual
+            $start = date('Y-m-01');
+            $end   = date('Y-m-t');
+
+            // (debug opcional)
+            echo '<script>console.log("DBG uid:",', json_encode($uid), ',"rango:",', json_encode([$start, $end]), ');</script>';
+
+            // sonda
+            try {
+              $dash->pingTransaccion($uid);
+            } catch (Throwable $e) {
+              $errors[] = $e->getMessage();
+            }
+
+            // consultas
+            try {
+              $tot    = $dash->getTotalesRango($uid, $start, $end);
+            } catch (Throwable $e) {
+              $errors[] = $e->getMessage();
+            }
+            try {
+              $cats   = $dash->getGastosPorCategoriaRango($uid, $start, $end);
+            } catch (Throwable $e) {
+              $errors[] = $e->getMessage();
+            }
+            try {
+              $recent = $dash->getTransaccionesRecientes($uid, 5);
+            } catch (Throwable $e) {
+              $errors[] = $e->getMessage();
+            }
+            try {
+              $goals  = $dash->getMetasUsuario($uid, 3);
+            } catch (Throwable $e) {
+              $errors[] = $e->getMessage();
+            }
+
+            echo '<script>',
+            'window.dashboardData = ', json_encode([
+              'totals' => $tot,
+              'expensesByCategory' => $cats,
+              'recentTransactions' => $recent,
+              'goals' => $goals,
+            ]), ';', (!empty($errors)
+              ? 'console.error("Dashboard SQL errors:", ' . json_encode($errors) . ');'
+              : 'console.info("Dashboard SQL OK");'),
+            'document.addEventListener("DOMContentLoaded",function(){',
+            '  if (window.hydrateDashboardFromServer) window.hydrateDashboardFromServer();',
+            '});',
+            '</script>';
+          } catch (Throwable $e) {
+            echo '<script>',
+            'window.dashboardData = {totals:{ingresos:0,gastos:0,balance:0,ahorro:0},expensesByCategory:[],recentTransactions:[],goals:[]};',
+            'console.error("Dashboard fatal error:", ', json_encode($e->getMessage()), ');',
+            'document.addEventListener("DOMContentLoaded",function(){',
+            '  if (window.hydrateDashboardFromServer) window.hydrateDashboardFromServer();',
+            '});',
+            '</script>';
+          }
         }
       } else {
         echo "<section class='content-section'><h2>Vista no encontrada</h2><p>{$page}.php</p></section>";
@@ -143,7 +237,7 @@ if ($page === 'transacciones') {
     </main>
   </div>
 
-  <script src="vista/js/script.js?v=10"></script>
+  <script src="vista/js/script.js?v=11"></script>
 
 </body>
 

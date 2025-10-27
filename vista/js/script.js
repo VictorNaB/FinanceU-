@@ -226,12 +226,14 @@ const updateUserInfo = () => {
 
 // Dashboard Functions
 const updateDashboard = () => {
+  hydrateDashboardFromServer();
   updateStats();
   updateExpensesChart();
   updateRecentTransactions();
   updateGoalsProgress();
   updateTrendChart();
 };
+
 
 const updateStats = () => {
   const incEl = document.getElementById("monthly-income");
@@ -789,6 +791,94 @@ const addMoneyToPocket = (amount) => {
   }
 };
 
+function toCOP(n) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0); }
+
+function hydrateDashboardFromServer() {
+  if (!window.dashboardData) return;
+
+  // Tarjetas superiores
+  const incEl = document.getElementById('monthly-income');
+  const expEl = document.getElementById('monthly-expenses');
+  const balEl = document.getElementById('total-balance');
+  const savEl = document.getElementById('total-savings');
+
+  if (incEl && expEl && balEl && savEl) {
+    const t = window.dashboardData.totals || {};
+    incEl.textContent = toCOP(t.ingresos || 0);
+    expEl.textContent = toCOP(t.gastos || 0);
+    balEl.textContent = toCOP(t.balance || 0);
+    savEl.textContent = toCOP(t.ahorro || 0);
+  }
+
+  // Gastos por categoría (Chart.js doughnut)
+  (function drawExpensesByCategory() {
+    const canvas = document.getElementById('expenses-chart');
+    if (!canvas || !window.dashboardData.expensesByCategory) return;
+    const ctx = canvas.getContext('2d');
+    if (canvas._chart) { canvas._chart.destroy(); canvas._chart = null; }
+
+    const cats = window.dashboardData.expensesByCategory;
+    if (!cats.length) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
+
+    const labels = cats.map(c => getCategoryName(String(c.id_categoria)));
+    const data = cats.map(c => Number(c.total || 0));
+
+    canvas._chart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels, datasets: [{
+          data,
+          backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+  })();
+
+  // Transacciones recientes
+  (function drawRecent() {
+    const container = document.getElementById('recent-transactions');
+    if (!container) return;
+    const rec = window.dashboardData.recentTransactions || [];
+    if (!rec.length) { container.innerHTML = '<p class="text-center">No hay transacciones recientes</p>'; return; }
+    container.innerHTML = rec.map(t => {
+      const type = (Number(t.idtipo_transaccion) === 1) ? 'income' : 'expense';
+      const sign = (type === 'income') ? '+' : '-';
+      return `
+        <div class="transaction-item" style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-weight:var(--font-weight-medium);">${t.descripcion}</div>
+            <div style="font-size:.875rem;color:var(--muted-foreground);">${formatDate(t.fecha)} • ${getCategoryName(String(t.idCategoriaTransaccion))}</div>
+          </div>
+          <div class="transaction-amount ${type}" style="font-weight:var(--font-weight-medium);">${sign}${toCOP(t.monto)}</div>
+        </div>`;
+    }).join('');
+  })();
+
+  // Progreso de metas (sin progreso en BD: mostramos 0% y datos básicos)
+  (function drawGoals() {
+    const container = document.getElementById('goals-progress');
+    if (!container) return;
+    const goals = window.dashboardData.goals || [];
+    if (!goals.length) { container.innerHTML = '<p class="text-center">No hay metas creadas</p>'; return; }
+    container.innerHTML = goals.slice(0, 3).map(g => {
+      const pct = 0; // no hay progreso en BD
+      return `
+        <div style="margin-bottom:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+            <span style="font-weight:var(--font-weight-medium);">${g.titulo_meta}</span>
+            <span style="font-size:.875rem;color:var(--muted-foreground);">${pct}%</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:.875rem;color:var(--muted-foreground);margin-top:.25rem;">
+            <span>Meta: ${toCOP(g.monto_objetivo)}</span>
+            <span>Vence: ${formatDate(g.fecha_limite)}</span>
+          </div>
+        </div>`;
+    }).join('');
+  })();
+}
+
 // Goal Functions
 const updateGoalsList = () => {
   const container = document.getElementById("goals-grid");
@@ -988,10 +1078,6 @@ function hydrateWeeklyFromServer() {
   bal.className = `stat-value ${balance >= 0 ? 'income' : 'expense'}`;
 }
 
-// Llama esto al cargar la página y/o dentro de updateAnalysis():
-document.addEventListener('DOMContentLoaded', () => {
-  hydrateWeeklyFromServer();
-});
 
 const updateAnalysis = () => {
   hydrateWeeklyFromServer();
@@ -1032,44 +1118,74 @@ const updateWeeklyStats = () => {
 };
 
 
-const getServerWeekRange = () => {
-  if (!window.weeklySummary) return null;
+// Helper: rango de semana entregado por el backend (monday..sunday)
+function getServerWeekRange() {
+  if (!window.weeklySummary || !window.weeklySummary.semana_inicio || !window.weeklySummary.semana_fin) return null;
   return {
-    start: new Date(window.weeklySummary.semana_inicio), // p.ej. 2025-10-27
-    end: new Date(window.weeklySummary.semana_fin)     // p.ej. 2025-11-02
+    start: new Date(window.weeklySummary.semana_inicio + 'T00:00:00'),
+    end: new Date(window.weeklySummary.semana_fin + 'T00:00:00')
   };
-};
+}
 
 const updateDailyExpensesChart = () => {
   const canvas = document.getElementById('daily-expenses-chart');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  const range = getServerWeekRange();
-  if (!range) { ctx.clearRect(0, 0, canvas.width, canvas.height); return; }
-
-  // genera los 7 días exactos según el backend
-  const days = [];
-  const cursor = new Date(range.start);
-  while (cursor <= range.end) {
-    const iso = cursor.toISOString().split('T')[0];
-    const expenses = appState.transactions
-      .filter(t => t.type === 'expense' && t.date === iso)
-      .reduce((s, t) => s + t.amount, 0);
-    days.push({
-      label: cursor.toLocaleDateString('es-CO', { weekday: 'short' }),
-      value: expenses
-    });
-    cursor.setDate(cursor.getDate() + 1);
+  // Destruye un chart previo para que no se superponga
+  if (canvas._chart) {
+    canvas._chart.destroy();
+    canvas._chart = null;
   }
 
-  new Chart(ctx, {
+  const range = getServerWeekRange();
+  if (!range) {
+    // Si no hay rango del servidor, limpia el canvas y sal
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    return;
+  }
+
+  // 1) Si el servidor ya envió los gastos por día, úsalo
+  //    window.dailyExpenses = [{fecha:'YYYY-MM-DD', gastos: number}, ...]
+  let labels = [];
+  let data = [];
+
+  if (Array.isArray(window.dailyExpenses) && window.dailyExpenses.length) {
+    // Normaliza exactamente a los 7 días del rango del servidor
+    const map = {};
+    window.dailyExpenses.forEach(d => { map[d.fecha] = Number(d.gastos || 0); });
+
+    const cursor = new Date(range.start);
+    while (cursor <= range.end) {
+      const iso = cursor.toISOString().split('T')[0];
+      labels.push(cursor.toLocaleDateString('es-CO', { weekday: 'short' }));
+      data.push(map[iso] ?? 0);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  } else {
+    // 2) Fallback: calcula desde las transacciones locales pero
+    //    respetando el rango de semana que vino del servidor
+    const cursor = new Date(range.start);
+    while (cursor <= range.end) {
+      const iso = cursor.toISOString().split('T')[0];
+      const expenses = appState.transactions
+        .filter(t => t.type === 'expense' && t.date === iso)
+        .reduce((s, t) => s + Number(t.amount || 0), 0);
+
+      labels.push(cursor.toLocaleDateString('es-CO', { weekday: 'short' }));
+      data.push(expenses);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  }
+
+  // 3) Crea el gráfico
+  canvas._chart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: days.map(d => d.label),
+      labels,
       datasets: [{
         label: 'Gastos Diarios',
-        data: days.map(d => d.value),
+        data,
         backgroundColor: '#ef4444',
         borderColor: '#dc2626',
         borderWidth: 1
@@ -1077,79 +1193,82 @@ const updateDailyExpensesChart = () => {
     },
     options: {
       responsive: true,
-      scales: { y: { beginAtZero: true, ticks: { callback: v => formatCurrency(v) } } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { callback: v => formatCurrency(v) }
+        }
+      },
       plugins: { legend: { display: false } }
     }
   });
 };
 
 const updateTopCategories = () => {
-  const container = document.getElementById("top-categories");
+  const container = document.getElementById('top-categories');
   if (!container) return;
 
+  // 1) Server-first: si el backend envió topCategories = [{categoria, total}]
+  if (Array.isArray(window.topCategories) && window.topCategories.length) {
+    container.innerHTML = window.topCategories.map(row => `
+      <div class="category-item">
+        <span class="category-name">${getCategoryName(String(row.categoria))}</span>
+        <span class="category-amount">${formatCurrency(Number(row.total || 0))}</span>
+      </div>
+    `).join('');
+    return;
+  }
+
+  // 2) Fallback local: calcular top 5 de gastos del MES actual desde appState.transactions
   const m = new Date().getMonth();
   const y = new Date().getFullYear();
-  const monthlyExpenses = appState.transactions.filter((t) => {
+
+  const monthlyExpenses = appState.transactions.filter(t => {
+    if (t.type !== 'expense') return false;
     const d = new Date(t.date);
-    return t.type === "expense" && d.getMonth() === m && d.getFullYear() === y;
+    return d.getMonth() === m && d.getFullYear() === y;
   });
 
   const totals = {};
-  monthlyExpenses.forEach((e) => {
-    totals[e.category] = (totals[e.category] || 0) + e.amount;
+  monthlyExpenses.forEach(e => {
+    const key = String(e.category);
+    totals[key] = (totals[key] || 0) + Number(e.amount || 0);
   });
 
-  const top = Object.entries(totals)
+  const entries = Object.entries(totals)             // [ [categoria, total], ...]
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
-  if (top.length === 0) {
+
+  if (entries.length === 0) {
     container.innerHTML = '<p class="text-center">No hay gastos este mes</p>';
     return;
   }
 
-  container.innerHTML = top
-    .map(
-      ([cat, amount]) => `
+  container.innerHTML = entries.map(([cat, amount]) => `
     <div class="category-item">
       <span class="category-name">${getCategoryName(cat)}</span>
       <span class="category-amount">${formatCurrency(amount)}</span>
     </div>
-  `
-    )
-    .join("");
+  `).join('');
 };
 
+
 const updateComparison = () => {
-  const container = document.getElementById("comparison-chart");
+  const container = document.getElementById('comparison-chart');
   if (!container) return;
 
-  const now = new Date();
-  const currentWeekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-  const currentWeekEnd = new Date(currentWeekStart);
-  currentWeekEnd.setDate(currentWeekEnd.getDate() + 6);
+  let prev = 0, cur = 0;
 
-  const previousWeekStart = new Date(currentWeekStart);
-  previousWeekStart.setDate(previousWeekStart.getDate() - 7);
-  const previousWeekEnd = new Date(previousWeekStart);
-  previousWeekEnd.setDate(previousWeekEnd.getDate() + 6);
-
-  const cur = appState.transactions
-    .filter((t) => {
-      const d = new Date(t.date);
-      return (
-        t.type === "expense" && d >= currentWeekStart && d <= currentWeekEnd
-      );
-    })
-    .reduce((s, t) => s + t.amount, 0);
-
-  const prev = appState.transactions
-    .filter((t) => {
-      const d = new Date(t.date);
-      return (
-        t.type === "expense" && d >= previousWeekStart && d <= previousWeekEnd
-      );
-    })
-    .reduce((s, t) => s + t.amount, 0);
+  if (window.weekCompare) {
+    prev = Number(window.weekCompare.previa || 0);
+    cur = Number(window.weekCompare.actual || 0);
+  } else if (Array.isArray(window.weeklySeries) && window.weeklySeries.length) {
+    // fallback: usa weeklySeries (asumiendo orden DESC por semana_inicio)
+    cur = Number(window.weeklySeries[0]?.gastos_totales || 0);
+    prev = Number(window.weeklySeries[1]?.gastos_totales || 0);
+  } else {
+    // último fallback: 0s
+  }
 
   const diff = cur - prev;
   const pct = prev > 0 ? (diff / prev) * 100 : 0;
@@ -1157,24 +1276,21 @@ const updateComparison = () => {
   container.innerHTML = `
     <div style="text-align:center;">
       <div style="font-size:2rem;font-weight:var(--font-weight-medium);margin-bottom:1rem;">
-        <span style="color:${diff >= 0 ? "var(--destructive)" : "var(--chart-4)"
-    };">${diff >= 0 ? "+" : ""}${formatCurrency(diff)}</span>
+        <span style="color:${diff >= 0 ? 'var(--destructive)' : 'var(--chart-4)'};">
+          ${diff >= 0 ? '+' : ''}${formatCurrency(diff)}
+        </span>
       </div>
-      <div style="color:var(--muted-foreground);">${Math.abs(pct).toFixed(
-      1
-    )}% ${diff >= 0 ? "más" : "menos"} que la semana anterior</div>
+      <div style="color:var(--muted-foreground);">
+        ${Math.abs(pct).toFixed(1)}% ${diff >= 0 ? 'más' : 'menos'} que la semana anterior
+      </div>
       <div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:center;">
         <div>
           <div style="font-size:.875rem;color:var(--muted-foreground);">Semana Anterior</div>
-          <div style="font-size:1.25rem;font-weight:var(--font-weight-medium);">${formatCurrency(
-      prev
-    )}</div>
+          <div style="font-size:1.25rem;font-weight:var(--font-weight-medium);">${formatCurrency(prev)}</div>
         </div>
         <div>
           <div style="font-size:.875rem;color:var(--muted-foreground);">Semana Actual</div>
-          <div style="font-size:1.25rem;font-weight:var(--font-weight-medium);">${formatCurrency(
-      cur
-    )}</div>
+          <div style="font-size:1.25rem;font-weight:var(--font-weight-medium);">${formatCurrency(cur)}</div>
         </div>
       </div>
     </div>
@@ -1396,28 +1512,34 @@ const deleteReminder = (reminderId) => {
 // Profile Functions
 const updateProfile = () => {
   const f = (id) => document.getElementById(id);
+
+  // Datos de usuario (como ya lo tenías)
   if (appState.user) {
-    const fn = f("profile-firstname");
-    if (fn) fn.value = appState.user.firstName || "";
-    const ln = f("profile-lastname");
-    if (ln) ln.value = appState.user.lastName || "";
-    const em = f("profile-email");
-    if (em) em.value = appState.user.email || "";
-    const un = f("profile-university");
-    if (un) un.value = appState.user.university || "";
-    const sp = f("profile-program");
-    if (sp) sp.value = appState.user.studyProgram || "";
+    const fn = f('profile-firstname'); if (fn) fn.value = appState.user.firstName || '';
+    const ln = f('profile-lastname'); if (ln) ln.value = appState.user.lastName || '';
+    const em = f('profile-email'); if (em) em.value = appState.user.email || '';
+    const un = f('profile-university'); if (un) un.value = appState.user.university || '';
+    const sp = f('profile-program'); if (sp) sp.value = appState.user.studyProgram || '';
   }
 
-  const tt = f("total-transactions");
-  if (tt) tt.textContent = appState.transactions.length;
-  const tp = f("total-pockets");
-  if (tp) tp.textContent = appState.pockets.length;
-  const tg = f("total-goals");
-  if (tg) tg.textContent = appState.goals.length;
-  const cd = f("consecutive-days");
-  if (cd) cd.textContent = calculateConsecutiveDays();
+  // Estadísticas de uso: servidor > fallback cliente
+  const tt = f('total-transactions');
+  const tg = f('total-goals');
+  const cd = f('consecutive-days');
+
+  if (window.usageStats) {
+    if (tt) tt.textContent = window.usageStats.transacciones_registradas ?? 0;
+    if (tg) tg.textContent = window.usageStats.metas_establecidas ?? 0;
+    if (cd) cd.textContent = window.usageStats.dias_consecutivos ?? 0;
+  } else {
+    // Fallback (lo que ya hacías)
+    if (tt) tt.textContent = appState.transactions.length;
+    if (tg) tg.textContent = appState.goals.length;
+    if (cd) cd.textContent = calculateConsecutiveDays();
+  }
 };
+
+
 
 const calculateConsecutiveDays = () => {
   if (appState.transactions.length === 0) return 0;
@@ -1493,11 +1615,10 @@ const getIconClass = (icon) => {
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
   // Load data
+  const main = document.getElementById('main-app');
+  if (main) main.classList.add('active');
+  hydrateWeeklyFromServer();
   loadFromStorage();
-
-  // Decide landing / main
-  if (appState.user) showMainApp();
-  else showLanding();
 
   // Hero chart (opcional)
   setTimeout(() => {
@@ -1532,6 +1653,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 100);
 
+  if (document.getElementById('profile-section') && typeof updateProfile === 'function') {
+    updateProfile();
+  }
   // Calendar navigation (si existe)
   const prevBtn = document.getElementById("prev-month");
   if (prevBtn) prevBtn.addEventListener("click", previousMonth);

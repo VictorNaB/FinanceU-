@@ -19,6 +19,7 @@ class Meta {
         $stmt2 = $this->conexion->prepare("INSERT INTO EstadisticasUso (id_usuario, metas_establecidas) VALUES (?, ?)
                 ON DUPLICATE KEY UPDATE metas_establecidas = metas_establecidas + 1");
         $stmt2->bind_param("ii", $idUsuario, $metasRegistradas);
+        $stmt2->execute(); 
         return $stmt2->execute();
 
     }

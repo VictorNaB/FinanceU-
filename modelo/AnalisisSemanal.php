@@ -93,7 +93,7 @@ class AnalisisSemanal
         return $stmt2->execute();
     }
 
-    public function getSemanaActual(int $idUsuario, string $fecha): ?array
+    public function getSemanaActual(int $idUsuario, string $fecha)
     {
         list($ini, $fin) = $this->rangoSemana($fecha);
         $sql = "SELECT id_usuario, semana_inicio, semana_fin,
@@ -107,7 +107,7 @@ class AnalisisSemanal
         return $res ?: null;
     }
 
-    public function getUltimasSemanas(int $idUsuario, int $n = 8): array
+    public function getUltimasSemanas(int $idUsuario, int $n = 8)
     {
         $sql = "SELECT semana_inicio, semana_fin, ingresos_totales, gastos_totales, balance
                   FROM AnalisisSemanal
@@ -118,5 +118,70 @@ class AnalisisSemanal
         $stmt->bind_param("ii", $idUsuario, $n);
         $stmt->execute();
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // 1.a) Gastos por día de la semana de una fecha dada
+    public function getGastosPorDiaSemana(int $idUsuario, string $fecha)
+    {
+        // lunes-domingo de esa semana
+        [$ini, $fin] = $this->rangoSemana($fecha);
+
+        $sql = "SELECT DATE(fecha) AS d,
+                   SUM(CASE WHEN idtipo_transaccion = 2 THEN monto ELSE 0 END) AS gastos
+            FROM Transaccion
+            WHERE id_usuario = ? AND fecha BETWEEN ? AND ?
+            GROUP BY DATE(fecha)";
+
+        $stmt = $this->cn->prepare($sql);
+        $stmt->bind_param("iss", $idUsuario, $ini, $fin);
+        $stmt->execute();
+        $raw = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        // normaliza a 7 días (0 si no hubo gasto ese día)
+        $map = [];
+        foreach ($raw as $r) $map[$r['d']] = (float)$r['gastos'];
+
+        $out = [];
+        $cursor = new DateTimeImmutable($ini);
+        $end    = new DateTimeImmutable($fin);
+        while ($cursor <= $end) {
+            $k = $cursor->format('Y-m-d');
+            $out[] = ['fecha' => $k, 'gastos' => ($map[$k] ?? 0)];
+            $cursor = $cursor->modify('+1 day');
+        }
+        return $out;
+    }
+
+    // 1.b) Top categorías del MES (solo gastos)
+    public function getTopCategoriasMes(int $idUsuario, string $ym /* 'YYYY-MM' */, int $limit = 5)
+    {
+        $sql = "SELECT idCategoriaTransaccion AS categoria,
+                   SUM(CASE WHEN idtipo_transaccion = 2 THEN monto ELSE 0 END) AS total
+            FROM Transaccion
+            WHERE id_usuario = ?
+              AND DATE_FORMAT(fecha, '%Y-%m') = ?
+            GROUP BY idCategoriaTransaccion
+            ORDER BY total DESC
+            LIMIT ?";
+        $stmt = $this->cn->prepare($sql);
+        $stmt->bind_param("isi", $idUsuario, $ym, $limit);
+        $stmt->execute();
+        return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+
+    // (opcional) si quieres un helper para current vs previous week usando AnalisisSemanal
+    public function getGastosSemanasActualPrev(int $idUsuario, string $fecha)
+    {
+        [$ini] = $this->rangoSemana($fecha);
+        $cur = $this->getSemanaActual($idUsuario, $fecha);
+
+        // semana anterior
+        $prevFecha = (new DateTimeImmutable($ini))->modify('-1 day')->format('Y-m-d');
+        $prev = $this->getSemanaActual($idUsuario, $prevFecha);
+
+        return [
+            'actual' => $cur ? (float)$cur['gastos_totales'] : 0,
+            'previa' => $prev ? (float)$prev['gastos_totales'] : 0,
+        ];
     }
 }

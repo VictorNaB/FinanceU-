@@ -77,8 +77,12 @@
               <td><?= htmlspecialchars($mapCategorias[(int)$t['idCategoriaTransaccion']] ?? $t['idCategoriaTransaccion']) ?></td>
               <td><?= htmlspecialchars($mapTipos[(int)$t['idtipo_transaccion']] ?? $t['idtipo_transaccion']) ?></td>
               <td><?= number_format((float)$t['monto'], 2) ?></td>
-              <td> <button class="Editar">✏️</button>
-                <button class="Eliminar">🗑️</button>
+              <td> <button class="btn-icon">
+                <i class="fas fa-edit"></i>
+              </button>
+                <button class="btn-icon">
+                  <i class="fas fa-trash"></i>
+                </button>
               </td>
             </tr> <?php endwhile; ?> <?php else: ?> <tr>
             <td colspan="6" class="text-center">No se encontraron transacciones</td>

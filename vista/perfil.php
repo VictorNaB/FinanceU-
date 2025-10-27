@@ -94,13 +94,6 @@ if (session_status() === PHP_SESSION_NONE) {
                         <div class="usage-icon">
                             <i class="fas fa-piggy-bank"></i>
                         </div>
-
-                    </div>
-
-                    <div class="usage-stat">
-                        <div class="usage-icon">
-                            <i class="fas fa-target"></i>
-                        </div>
                         <div class="usage-info">
                             <div class="usage-label">Metas Establecidas</div>
                             <div class="usage-value" id="total-goals">0</div>
