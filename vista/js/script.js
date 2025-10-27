@@ -7,7 +7,6 @@ let appState = {
   currentSection: "dashboard",
   user: null,
   transactions: [],
-  pockets: [],
   goals: [],
   reminders: [],
   currentEditingId: null,
@@ -53,7 +52,6 @@ const saveToStorage = () => {
     JSON.stringify({
       user: appState.user,
       transactions: appState.transactions,
-      pockets: appState.pockets,
       goals: appState.goals,
       reminders: appState.reminders,
     })
@@ -66,7 +64,6 @@ const loadFromStorage = () => {
     const parsed = JSON.parse(data);
     appState.user = parsed.user || null;
     appState.transactions = parsed.transactions || [];
-    appState.pockets = parsed.pockets || [];
     appState.goals = parsed.goals || [];
     appState.reminders = parsed.reminders || [];
   }
@@ -126,7 +123,6 @@ const handleLogin = (email, password) => {
       if (parsed.user && parsed.user.email === email) {
         appState.user = parsed.user;
         appState.transactions = parsed.transactions || [];
-        appState.pockets = parsed.pockets || [];
         appState.goals = parsed.goals || [];
         appState.reminders = parsed.reminders || [];
         showMainApp();
@@ -169,7 +165,6 @@ const showMainApp = () => {
 const logout = () => {
   appState.user = null;
   appState.transactions = [];
-  appState.pockets = [];
   appState.goals = [];
   appState.reminders = [];
   localStorage.removeItem("financeu_data");
@@ -199,9 +194,6 @@ const showSection = (sectionName) => {
       break;
     case "transactions":
       updateTransactionsList();
-      break;
-    case "pockets":
-      updatePocketsList();
       break;
     case "goals":
       updateGoalsList();
@@ -268,10 +260,6 @@ const updateStats = () => {
     .reduce((s, t) => s + t.amount, 0);
   const totalBalance = appState.transactions.reduce(
     (s, t) => s + (t.type === "income" ? t.amount : -t.amount),
-    0
-  );
-  const totalSavings = appState.pockets.reduce(
-    (s, p) => s + (p.current || 0),
     0
   );
 
@@ -1379,7 +1367,7 @@ const editServerReminder = (id) => {
 };
 
 const deleteServerReminder = async (id) => {
-  if (!confirm('¿Eliminar este recordatorio en la base de datos?')) return;
+  if (!confirm('¿Eliminar este recordatorio?')) return;
   try {
     const target = '/FinanceU-/vista/RecordatorioVista.php?action=eliminar';
     const res = await fetch(target, {
@@ -1390,7 +1378,7 @@ const deleteServerReminder = async (id) => {
     });
     const data = await res.json().catch(() => null);
     if (res.ok && data && data.success) {
-        showToast('Recordatorio eliminado', 'El recordatorio se eliminó de la BD', 'success');
+        showToast('Recordatorio eliminado', 'El recordatorio se eliminó correctamente', 'success');
         // eliminar elemento del DOM si existe
         const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
         if (el) el.remove();
@@ -1696,7 +1684,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
   [
-    "pocket-form",
     "reminder-form",
     "add-money-form",
     "add-progress-form",
@@ -1707,13 +1694,6 @@ document.addEventListener("DOMContentLoaded", () => {
     f.addEventListener("submit", (e) => {
       e.preventDefault();
       const fd = new FormData(f);
-      if (id === "pocket-form")
-        savePocket({
-          name: fd.get("name"),
-          target: fd.get("target"),
-          icon: fd.get("icon"),
-          color: fd.get("color"),
-        });
       if (id === "reminder-form") {
         // Enviar al servidor para persistir en la BD (crear o actualizar según estado)
         (async () => {
@@ -1735,7 +1715,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             const data = await res.json().catch(() => null);
             if (res.ok && data && data.success) {
-              showToast(isEditServer ? 'Recordatorio actualizado' : 'Recordatorio creado', isEditServer ? 'El recordatorio se actualizó en la base de datos' : 'El recordatorio se guardó en la base de datos', 'success');
+              showToast(isEditServer ? 'Recordatorio actualizado' : 'Recordatorio creado', isEditServer ? 'El recordatorio se actualizó en la base de datos' : 'El recordatorioo se guardo correctamente', 'success');
               // Cerrar modal y recargar para que el listado server-side muestre el nuevo recordatorio
               appState.currentEditingServerId = null;
               closeReminderModal();
@@ -1751,7 +1731,6 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         })();
       }
-      if (id === "add-money-form") addMoneyToPocket(fd.get("amount"));
       if (id === "add-progress-form") addProgressToGoal(fd.get("amount"));
       if (id === "profile-form")
         saveProfile({
@@ -1820,10 +1799,6 @@ window.closeTransactionModal = closeTransactionModal;
 window.editTransaction = editTransaction;
 window.deleteTransaction = deleteTransaction;
 window.clearFilters = clearFilters;
-window.openPocketModal = openPocketModal;
-window.closePocketModal = closePocketModal;
-window.editPocket = editPocket;
-window.deletePocket = deletePocket;
 window.openAddMoneyModal = openAddMoneyModal;
 window.closeAddMoneyModal = closeAddMoneyModal;
 window.openGoalModal = openGoalModal;

@@ -35,7 +35,6 @@
                 if (session_status() === PHP_SESSION_NONE) session_start();
                 require_once __DIR__ . '/../modelo/RecordatorioModelo.php';
 
-                // marcamos que esta lista fue renderizada por el servidor para que el JS no la sobreescriba
                 echo '<div id="reminders-list" class="reminders-list" data-server-rendered="1">';
 
                 if (!isset($_SESSION['id_usuario'])) {
@@ -47,7 +46,6 @@
                         if (empty($proximos)) {
                             echo '<p class="text-center">No hay recordatorios próximos</p>';
                         } else {
-                                    // helper para formato de fecha en español corto
                                     function formatoFechaEsp($fecha)
                                     {
                                         $m = [

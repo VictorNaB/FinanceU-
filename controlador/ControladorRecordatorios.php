@@ -29,16 +29,13 @@ class ControladorRecordatorios
 		$monto = ($monto !== null && $monto !== '') ? (float)$monto : 0.0;
 		// fecha
 		$fecha = $_POST['fecha'] ?? $_POST['date'] ?? date('Y-m-d');
-		// tipo: puede venir como id ('idtipo_recordatorio') o como nombre textual ('type')
 		$idtipo = 0;
 		if (isset($_POST['idtipo_recordatorio']) && is_numeric($_POST['idtipo_recordatorio'])) {
 			$idtipo = (int)$_POST['idtipo_recordatorio'];
 		} elseif (isset($_POST['type']) && trim($_POST['type']) !== '') {
-			// mapear nombre a id mediante el modelo (crea si no existe)
 			$idtipo = $this->modelo->getOrCreateTipoByName($_POST['type']);
 		}
         
-		// recurrente: id o nombre
 		$idrecurrente = 0;
 		if (isset($_POST['idrecurrente']) && is_numeric($_POST['idrecurrente'])) {
 			$idrecurrente = (int)$_POST['idrecurrente'];

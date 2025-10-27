@@ -26,9 +26,6 @@ class RecordatorioModelo
 		return $this->conexion->insert_id;
 	}
 
-	/**
-	 * Buscar un tipo de recordatorio por nombre; si no existe, lo crea y devuelve el id
-	 */
 	public function getOrCreateTipoByName($nombre)
 	{
 		$nombre = trim($nombre);
