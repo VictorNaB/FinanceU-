@@ -21,7 +21,7 @@ const formatCurrency = (amount) => {
     currency: "COP",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount || 0);
 };
 
 const formatDate = (date) => {
@@ -126,11 +126,7 @@ const handleLogin = (email, password) => {
         appState.goals = parsed.goals || [];
         appState.reminders = parsed.reminders || [];
         showMainApp();
-        showToast(
-          "¡Bienvenido!",
-          "Has iniciado sesión correctamente",
-          "success"
-        );
+        showToast("¡Bienvenido!", "Has iniciado sesión correctamente", "success");
         return true;
       }
     }
@@ -147,11 +143,7 @@ const handleRegister = (userData) => {
     studyProgram: userData.studyProgram,
   };
   showMainApp();
-  showToast(
-    "¡Cuenta creada!",
-    "Tu cuenta ha sido creada exitosamente",
-    "success"
-  );
+  showToast("¡Cuenta creada!", "Tu cuenta ha sido creada exitosamente", "success");
   return true;
 };
 
@@ -236,7 +228,6 @@ const updateDashboard = () => {
   updateTrendChart();
 };
 
-
 const updateStats = () => {
   const incEl = document.getElementById("monthly-income");
   const expEl = document.getElementById("monthly-expenses");
@@ -262,6 +253,14 @@ const updateStats = () => {
     (s, t) => s + (t.type === "income" ? t.amount : -t.amount),
     0
   );
+
+  // FIX: totalSavings definido (preferir backend; si no, sumar progreso local de metas)
+  let totalSavings = 0;
+  if (window.dashboardData?.totals?.ahorro != null) {
+    totalSavings = Number(window.dashboardData.totals.ahorro);
+  } else {
+    totalSavings = appState.goals.reduce((sum, g) => sum + (g.currentAmount || 0), 0);
+  }
 
   incEl.textContent = formatCurrency(monthlyIncome);
   expEl.textContent = formatCurrency(monthlyExpenses);
@@ -332,14 +331,12 @@ const updateRecentTransactions = () => {
       (t) => `
     <div class="transaction-item" style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid var(--border);">
       <div>
-        <div style="font-weight:var(--font-weight-medium);">${t.description
-        }</div>
+        <div style="font-weight:var(--font-weight-medium);">${t.description}</div>
         <div style="font-size:.875rem;color:var(--muted-foreground);">${formatDate(
           t.date
         )} • ${getCategoryName(t.category)}</div>
       </div>
-      <div class="transaction-amount ${t.type
-        }" style="font-weight:var(--font-weight-medium);">
+      <div class="transaction-amount ${t.type}" style="font-weight:var(--font-weight-medium);">
         ${t.type === "income" ? "+" : "-"}${formatCurrency(t.amount)}
       </div>
     </div>
@@ -364,11 +361,8 @@ const updateGoalsProgress = () => {
       return `
       <div style="margin-bottom:1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-          <span style="font-weight:var(--font-weight-medium);">${goal.title
-        }</span>
-          <span style="font-size:.875rem;color:var(--muted-foreground);">${pct.toFixed(
-          0
-        )}%</span>
+          <span style="font-weight:var(--font-weight-medium);">${goal.title}</span>
+          <span style="font-size:.875rem;color:var(--muted-foreground);">${pct.toFixed(0)}%</span>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
       </div>
@@ -486,16 +480,12 @@ const updateTransactionsList = () => {
       <td>${formatDate(t.date)}</td>
       <td>${t.description}</td>
       <td>${getCategoryName(t.category)}</td>
-      <td><span class="transaction-type ${t.type}">${t.type === "income" ? "Ingreso" : "Gasto"
-        }</span></td>
-      <td><span class="transaction-amount ${t.type}">${t.type === "income" ? "+" : "-"
-        }${formatCurrency(t.amount)}</span></td>
+      <td><span class="transaction-type ${t.type}">${t.type === "income" ? "Ingreso" : "Gasto"}</span></td>
+      <td><span class="transaction-amount ${t.type}">${t.type === "income" ? "+" : "-"}${formatCurrency(t.amount)}</span></td>
       <td>
         <div class="transaction-actions">
-          <button class="btn-icon" onclick="editTransaction('${t.id
-        }')"><i class="fas fa-edit"></i></button>
-          <button class="btn-icon danger" onclick="deleteTransaction('${t.id
-        }')"><i class="fas fa-trash"></i></button>
+          <button class="btn-icon" onclick="editTransaction('${t.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn-icon danger" onclick="deleteTransaction('${t.id}')"><i class="fas fa-trash"></i></button>
         </div>
       </td>
     </tr>
@@ -565,20 +555,12 @@ const saveTransaction = (formData) => {
         ...appState.transactions[idx],
         ...transactionData,
       };
-      showToast(
-        "Transacción actualizada",
-        "La transacción ha sido actualizada correctamente",
-        "success"
-      );
+      showToast("Transacción actualizada", "La transacción ha sido actualizada correctamente", "success");
     }
   } else {
     const newTransaction = { id: generateId(), ...transactionData };
     appState.transactions.push(newTransaction);
-    showToast(
-      "Transacción creada",
-      "La transacción ha sido registrada correctamente",
-      "success"
-    );
+    showToast("Transacción creada", "La transacción ha sido registrada correctamente", "success");
   }
 
   updateTransactionsList();
@@ -597,11 +579,7 @@ const deleteTransaction = (transactionId) => {
     updateTransactionsList();
     updateDashboard();
     saveToStorage();
-    showToast(
-      "Transacción eliminada",
-      "La transacción ha sido eliminada correctamente",
-      "info"
-    );
+    showToast("Transacción eliminada", "La transacción ha sido eliminada correctamente", "info");
   }
 };
 
@@ -615,7 +593,13 @@ const clearFilters = () => {
   updateTransactionsList();
 };
 
-function toCOP(n) { return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(n || 0); }
+function toCOP(n) {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0
+  }).format(n || 0);
+}
 
 function hydrateDashboardFromServer() {
   if (!window.dashboardData) return;
@@ -703,6 +687,22 @@ function hydrateDashboardFromServer() {
   })();
 }
 
+// --- GLOBAL: hidrata metas desde el backend ---
+function hydrateGoalsFromServer() {
+  if (!window.goalsData || !Array.isArray(window.goalsData)) return;
+
+  appState.goals = window.goalsData.map(g => ({
+    id: String(g.id_meta),
+    title: g.titulo_meta,
+    targetAmount: Number(g.monto_objetivo || 0),
+    currentAmount: Number(g.monto_actual || 0), // si no hay en BD, quedará 0
+    deadline: g.fecha_limite,
+    description: g.descripcion || ''
+  }));
+
+  updateGoalsList();
+}
+
 // Goal Functions
 const updateGoalsList = () => {
   const container = document.getElementById("goals-grid");
@@ -732,25 +732,17 @@ const updateGoalsList = () => {
       <div class="goal-card">
         <div class="goal-header">
           <h3 class="goal-title">${goal.title}</h3>
-          <div class="goal-deadline">${daysLeft > 0 ? `${daysLeft} días restantes` : "Vencida"
-        } • ${formatDate(goal.deadline)}</div>
+          <div class="goal-deadline">${daysLeft > 0 ? `${daysLeft} días restantes` : "Vencida"} • ${formatDate(goal.deadline)}</div>
         </div>
         <div class="goal-amount">
-          <span class="goal-current">${formatCurrency(
-          goal.currentAmount || 0
-        )}</span>
-          <span class="goal-target">de ${formatCurrency(
-          goal.targetAmount
-        )}</span>
+          <span class="goal-current">${formatCurrency(goal.currentAmount || 0)}</span>
+          <span class="goal-target">de ${formatCurrency(goal.targetAmount)}</span>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${percentage}%;"></div></div>
         <div class="goal-actions">
-          <button class="btn-primary" onclick="openAddProgressModal('${goal.id
-        }')"><i class="fas fa-plus"></i> Progreso</button>
-          <button class="btn-secondary" onclick="editGoal('${goal.id
-        }')"><i class="fas fa-edit"></i></button>
-          <button class="btn-danger" onclick="deleteGoal('${goal.id
-        }')"><i class="fas fa-trash"></i></button>
+          <button class="btn-primary" onclick="openAddProgressModal('${goal.id}')"><i class="fas fa-plus"></i> Progreso</button>
+          <button class="btn-secondary" onclick="editGoal('${goal.id}')"><i class="fas fa-edit"></i></button>
+          <button class="btn-danger" onclick="deleteGoal('${goal.id}')"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `;
@@ -774,16 +766,13 @@ const openGoalModal = (goalId = null) => {
       document.getElementById("goal-title").value = goal.title;
       document.getElementById("goal-amount").value = goal.targetAmount;
       document.getElementById("goal-deadline").value = goal.deadline;
-      document.getElementById("goal-description").value =
-        goal.description || "";
+      document.getElementById("goal-description").value = goal.description || "";
     }
   } else {
     if (title) title.textContent = "Nueva Meta";
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
-    document.getElementById("goal-deadline").value = nextYear
-      .toISOString()
-      .split("T")[0];
+    document.getElementById("goal-deadline").value = nextYear.toISOString().split("T")[0];
   }
 
   if (modal) modal.classList.add("active");
@@ -804,16 +793,10 @@ const saveGoal = (formData) => {
   };
 
   if (appState.currentEditingId) {
-    const index = appState.goals.findIndex(
-      (g) => g.id === appState.currentEditingId
-    );
+    const index = appState.goals.findIndex((g) => g.id === appState.currentEditingId);
     if (index !== -1) {
       appState.goals[index] = { ...appState.goals[index], ...goalData };
-      showToast(
-        "Meta actualizada",
-        "La meta ha sido actualizada correctamente",
-        "success"
-      );
+      showToast("Meta actualizada", "La meta ha sido actualizada correctamente", "success");
     }
   } else {
     const newGoal = { id: generateId(), currentAmount: 0, ...goalData };
@@ -835,11 +818,7 @@ const deleteGoal = (goalId) => {
     updateGoalsList();
     updateDashboard();
     saveToStorage();
-    showToast(
-      "Meta eliminada",
-      "La meta ha sido eliminada correctamente",
-      "info"
-    );
+    showToast("Meta eliminada", "La meta ha sido eliminada correctamente", "info");
   }
 };
 
@@ -859,9 +838,7 @@ const closeAddProgressModal = () => {
 };
 
 const addProgressToGoal = (amount) => {
-  const idx = appState.goals.findIndex(
-    (g) => g.id === appState.currentEditingId
-  );
+  const idx = appState.goals.findIndex((g) => g.id === appState.currentEditingId);
   if (idx !== -1) {
     appState.goals[idx].currentAmount += parseInt(amount);
     const goal = appState.goals[idx];
@@ -878,11 +855,7 @@ const addProgressToGoal = (amount) => {
     updateDashboard();
     saveToStorage();
     closeAddProgressModal();
-    showToast(
-      "Progreso agregado",
-      `Se agregaron ${formatCurrency(amount)} a la meta`,
-      "success"
-    );
+    showToast("Progreso agregado", `Se agregaron ${formatCurrency(amount)} a la meta`, "success");
   }
 };
 
@@ -902,17 +875,14 @@ function hydrateWeeklyFromServer() {
   bal.className = `stat-value ${balance >= 0 ? 'income' : 'expense'}`;
 }
 
-
 const updateAnalysis = () => {
   hydrateWeeklyFromServer();
-  //updateWeeklyStats();
   updateDailyExpensesChart();
   updateTopCategories();
   updateComparison();
 };
 
 const updateWeeklyStats = () => {
-  // Si el backend ya inyectó weeklySummary, no recalcular para no sobrescribir
   if (window.weeklySummary) return;
 
   const inc = document.getElementById('weekly-income');
@@ -927,7 +897,7 @@ const updateWeeklyStats = () => {
   const weekly = appState.transactions.filter(t => {
     const d = new Date(t.date);
     return d >= weekStart && d <= weekEnd;
-  });
+    });
 
   const weeklyIncome = weekly.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const weeklyExpenses = weekly.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -940,7 +910,6 @@ const updateWeeklyStats = () => {
   bal.textContent = toCOP(weeklyBalance);
   bal.className = `stat-value ${weeklyBalance >= 0 ? 'income' : 'expense'}`;
 };
-
 
 // Helper: rango de semana entregado por el backend (monday..sunday)
 function getServerWeekRange() {
@@ -956,7 +925,6 @@ const updateDailyExpensesChart = () => {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
 
-  // Destruye un chart previo para que no se superponga
   if (canvas._chart) {
     canvas._chart.destroy();
     canvas._chart = null;
@@ -964,18 +932,14 @@ const updateDailyExpensesChart = () => {
 
   const range = getServerWeekRange();
   if (!range) {
-    // Si no hay rango del servidor, limpia el canvas y sal
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     return;
   }
 
-  // 1) Si el servidor ya envió los gastos por día, úsalo
-  //    window.dailyExpenses = [{fecha:'YYYY-MM-DD', gastos: number}, ...]
   let labels = [];
   let data = [];
 
   if (Array.isArray(window.dailyExpenses) && window.dailyExpenses.length) {
-    // Normaliza exactamente a los 7 días del rango del servidor
     const map = {};
     window.dailyExpenses.forEach(d => { map[d.fecha] = Number(d.gastos || 0); });
 
@@ -987,8 +951,6 @@ const updateDailyExpensesChart = () => {
       cursor.setDate(cursor.getDate() + 1);
     }
   } else {
-    // 2) Fallback: calcula desde las transacciones locales pero
-    //    respetando el rango de semana que vino del servidor
     const cursor = new Date(range.start);
     while (cursor <= range.end) {
       const iso = cursor.toISOString().split('T')[0];
@@ -1002,7 +964,6 @@ const updateDailyExpensesChart = () => {
     }
   }
 
-  // 3) Crea el gráfico
   canvas._chart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -1032,7 +993,6 @@ const updateTopCategories = () => {
   const container = document.getElementById('top-categories');
   if (!container) return;
 
-  // 1) Server-first: si el backend envió topCategories = [{categoria, total}]
   if (Array.isArray(window.topCategories) && window.topCategories.length) {
     container.innerHTML = window.topCategories.map(row => `
       <div class="category-item">
@@ -1043,7 +1003,6 @@ const updateTopCategories = () => {
     return;
   }
 
-  // 2) Fallback local: calcular top 5 de gastos del MES actual desde appState.transactions
   const m = new Date().getMonth();
   const y = new Date().getFullYear();
 
@@ -1059,7 +1018,7 @@ const updateTopCategories = () => {
     totals[key] = (totals[key] || 0) + Number(e.amount || 0);
   });
 
-  const entries = Object.entries(totals)             // [ [categoria, total], ...]
+  const entries = Object.entries(totals)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5);
 
@@ -1076,7 +1035,6 @@ const updateTopCategories = () => {
   `).join('');
 };
 
-
 const updateComparison = () => {
   const container = document.getElementById('comparison-chart');
   if (!container) return;
@@ -1087,11 +1045,8 @@ const updateComparison = () => {
     prev = Number(window.weekCompare.previa || 0);
     cur = Number(window.weekCompare.actual || 0);
   } else if (Array.isArray(window.weeklySeries) && window.weeklySeries.length) {
-    // fallback: usa weeklySeries (asumiendo orden DESC por semana_inicio)
     cur = Number(window.weeklySeries[0]?.gastos_totales || 0);
     prev = Number(window.weeklySeries[1]?.gastos_totales || 0);
-  } else {
-    // último fallback: 0s
   }
 
   const diff = cur - prev;
@@ -1175,7 +1130,6 @@ const updateRemindersList = () => {
   const container = document.getElementById("reminders-list");
   if (!container) return;
 
-  // Si la lista fue renderizada por el servidor no la sobrescribimos desde JS
   if (container.dataset && container.dataset.serverRendered === '1') {
     return;
   }
@@ -1192,36 +1146,26 @@ const updateRemindersList = () => {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   if (upcoming.length === 0) {
-    container.innerHTML =
-      '<p class="text-center">No hay recordatorios próximos</p>';
+    container.innerHTML = '<p class="text-center">No hay recordatorios próximos</p>';
     return;
   }
 
   container.innerHTML = upcoming
     .map((r) => {
-      const daysUntil = Math.ceil(
-        (new Date(r.date) - new Date()) / (1000 * 60 * 60 * 24)
-      );
+      const daysUntil = Math.ceil((new Date(r.date) - new Date()) / (1000 * 60 * 60 * 24));
       return `
       <div class="reminder-item">
         <div class="reminder-title">${r.title}</div>
         <div class="reminder-date">
-          ${formatDate(r.date)} ${daysUntil === 0
-          ? "(Hoy)"
-          : daysUntil === 1
-            ? "(Mañana)"
-            : `(${daysUntil} días)`
-        }
+          ${formatDate(r.date)} ${
+            daysUntil === 0 ? "(Hoy)" :
+            daysUntil === 1 ? "(Mañana)" : `(${daysUntil} días)`
+          }
         </div>
-        ${r.amount
-          ? `<div class="reminder-amount">${formatCurrency(r.amount)}</div>`
-          : ""
-        }
+        ${r.amount ? `<div class="reminder-amount">${formatCurrency(r.amount)}</div>` : ""}
         <div style="margin-top:.5rem;">
-          <button class="btn-secondary" onclick="editReminder('${r.id
-        }')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-edit"></i></button>
-          <button class="btn-danger" onclick="deleteReminder('${r.id
-        }')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-trash"></i></button>
+          <button class="btn-secondary" onclick="editReminder('${r.id}')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-edit"></i></button>
+          <button class="btn-danger" onclick="deleteReminder('${r.id}')" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-trash"></i></button>
         </div>
       </div>
     `;
@@ -1265,8 +1209,7 @@ const openReminderModal = (reminderId = null) => {
       document.getElementById("reminder-date").value = r.date;
       document.getElementById("reminder-type").value = r.type;
       document.getElementById("reminder-recurring").value = r.recurring;
-      document.getElementById("reminder-description").value =
-        r.description || "";
+      document.getElementById("reminder-description").value = r.description || "";
     }
   } else {
     if (title) title.textContent = "Nuevo Recordatorio";
@@ -1294,28 +1237,15 @@ const saveReminder = (formData) => {
   };
 
   if (appState.currentEditingId) {
-    const index = appState.reminders.findIndex(
-      (r) => r.id === appState.currentEditingId
-    );
+    const index = appState.reminders.findIndex((r) => r.id === appState.currentEditingId);
     if (index !== -1) {
-      appState.reminders[index] = {
-        ...appState.reminders[index],
-        ...reminderData,
-      };
-      showToast(
-        "Recordatorio actualizado",
-        "El recordatorio ha sido actualizado correctamente",
-        "success"
-      );
+      appState.reminders[index] = { ...appState.reminders[index], ...reminderData };
+      showToast("Recordatorio actualizado", "El recordatorio ha sido actualizado correctamente", "success");
     }
   } else {
     const newReminder = { id: generateId(), ...reminderData };
     appState.reminders.push(newReminder);
-    showToast(
-      "Recordatorio creado",
-      "El recordatorio ha sido creado correctamente",
-      "success"
-    );
+    showToast("Recordatorio creado", "El recordatorio ha sido creado correctamente", "success");
   }
 
   updateCalendar();
@@ -1330,17 +1260,12 @@ const deleteReminder = (reminderId) => {
     appState.reminders = appState.reminders.filter((r) => r.id !== reminderId);
     updateCalendar();
     saveToStorage();
-    showToast(
-      "Recordatorio eliminado",
-      "El recordatorio ha sido eliminado correctamente",
-      "info"
-    );
+    showToast("Recordatorio eliminado", "El recordatorio ha sido eliminado correctamente", "info");
   }
 };
 
 // --- Server-side edit/delete helpers ---
 const editServerReminder = (id) => {
-  // buscar el elemento renderizado server-side
   const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
   if (!el) return;
   const title = el.dataset.title || '';
@@ -1350,7 +1275,6 @@ const editServerReminder = (id) => {
   const recurring = el.dataset.recurring || '';
   const description = el.dataset.description || '';
 
-  // rellenar modal
   openReminderModal();
   document.getElementById('reminder-title').value = title;
   document.getElementById('reminder-amount').value = amount;
@@ -1359,9 +1283,8 @@ const editServerReminder = (id) => {
   document.getElementById('reminder-recurring').value = recurring;
   document.getElementById('reminder-description').value = description;
 
-  // marcar que estamos editando un record existente en servidor
   appState.currentEditingServerId = id;
-  appState.currentEditingId = null; // no confundir con local ids
+  appState.currentEditingId = null;
   const titleEl = document.getElementById('reminder-modal-title');
   if (titleEl) titleEl.textContent = 'Editar Recordatorio';
 };
@@ -1378,12 +1301,10 @@ const deleteServerReminder = async (id) => {
     });
     const data = await res.json().catch(() => null);
     if (res.ok && data && data.success) {
-        showToast('Recordatorio eliminado', 'El recordatorio se eliminó correctamente', 'success');
-        // eliminar elemento del DOM si existe
-        const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
-        if (el) el.remove();
-        // refrescar recordatorios desde servidor y actualizar calendario
-        await refreshRemindersFromServer();
+      showToast('Recordatorio eliminado', 'El recordatorio se eliminó correctamente', 'success');
+      const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
+      if (el) el.remove();
+      await refreshRemindersFromServer();
     } else {
       showToast('Error', (data && data.message) ? data.message : 'No se pudo eliminar', 'error');
     }
@@ -1393,49 +1314,47 @@ const deleteServerReminder = async (id) => {
   }
 };
 
-  const refreshRemindersFromServer = async () => {
-    try {
-      const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=getProximos';
-      const res = await fetch(endpoint, { credentials: 'same-origin' });
-      if (!res.ok) return;
-      const arr = await res.json().catch(() => null);
-      if (!Array.isArray(arr)) return;
-      // Map server objects to client reminder shape
-      appState.reminders = arr.map((r) => ({
-        id: r.id_recordatorio?.toString() || (r.id_recordatorio ?? ''),
-        title: r.titulo || r.title || '',
-        amount: r.monto !== undefined ? Number(r.monto) : null,
-        date: r.fecha || '',
-        type: r.idtipo_recordatorio || r.type || '',
-        recurring: r.idrecurrente || r.recurring || '',
-        description: r.descripcion || r.description || ''
-      }));
-      // actualizar calendario visual
-      updateCalendarDisplay();
-      // Reconstruir la lista de recordatorios (lado derecho) con los datos del servidor
-      const container = document.getElementById('reminders-list');
-      if (container) {
-        const itemsHtml = arr
-          .map((r) => {
-            const title = r.titulo || '';
-            const montoVal = r.monto !== undefined ? Number(r.monto) : 0;
-            const monto = montoVal > 0 ? `\$ ${montoVal.toLocaleString('es-CO')}` : '';
-            const fechaRaw = r.fecha || '';
-            // calcular dias
-            const today = new Date();
-            const d = new Date(fechaRaw + 'T00:00:00');
-            const diffDays = Math.ceil((d - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / (1000 * 60 * 60 * 24));
-            let diasTxt = '';
-            if (diffDays === 0) diasTxt = '(Hoy)';
-            else if (diffDays === 1) diasTxt = '(Mañana)';
-            else if (diffDays < 0) diasTxt = `(${Math.abs(diffDays)} días ago)`;
-            else diasTxt = `(${diffDays} días)`;
+const refreshRemindersFromServer = async () => {
+  try {
+    const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=getProximos';
+    const res = await fetch(endpoint, { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const arr = await res.json().catch(() => null);
+    if (!Array.isArray(arr)) return;
 
-            // formato fecha corto similar a servidor
-            const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-            const fr = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+    appState.reminders = arr.map((r) => ({
+      id: r.id_recordatorio?.toString() || (r.id_recordatorio ?? ''),
+      title: r.titulo || r.title || '',
+      amount: r.monto !== undefined ? Number(r.monto) : null,
+      date: r.fecha || '',
+      type: r.idtipo_recordatorio || r.type || '',
+      recurring: r.idrecurrente || r.recurring || '',
+      description: r.descripcion || r.description || ''
+    }));
 
-            return `
+    updateCalendarDisplay();
+
+    const container = document.getElementById('reminders-list');
+    if (container) {
+      const itemsHtml = arr
+        .map((r) => {
+          const title = r.titulo || '';
+          const montoVal = r.monto !== undefined ? Number(r.monto) : 0;
+          const monto = montoVal > 0 ? `\$ ${montoVal.toLocaleString('es-CO')}` : '';
+          const fechaRaw = r.fecha || '';
+          const today = new Date();
+          const d = new Date(fechaRaw + 'T00:00:00');
+          const diffDays = Math.ceil((d - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / (1000 * 60 * 60 * 24));
+          let diasTxt = '';
+          if (diffDays === 0) diasTxt = '(Hoy)';
+          else if (diffDays === 1) diasTxt = '(Mañana)';
+          else if (diffDays < 0) diasTxt = `(${Math.abs(diffDays)} días ago)`;
+          else diasTxt = `(${diffDays} días)`;
+
+          const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+          const fr = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
+
+          return `
               <div class="reminder-item" data-id="${r.id_recordatorio}">
                 <div class="reminder-title">${escapeHtml(title)}</div>
                 <div class="reminder-date">${fr} ${diasTxt}</div>
@@ -1446,21 +1365,20 @@ const deleteServerReminder = async (id) => {
                 </div>
               </div>
             `;
-          })
-          .join('');
-        container.innerHTML = itemsHtml || '<p class="text-center">No hay recordatorios próximos</p>';
-        container.dataset.serverRendered = '1';
-      }
-    } catch (e) {
-      console.error('Error refrescando recordatorios:', e);
+        })
+        .join('');
+      container.innerHTML = itemsHtml || '<p class="text-center">No hay recordatorios próximos</p>';
+      container.dataset.serverRendered = '1';
     }
-  };
+  } catch (e) {
+    console.error('Error refrescando recordatorios:', e);
+  }
+};
 
 // Profile Functions
 const updateProfile = () => {
   const f = (id) => document.getElementById(id);
 
-  // Datos de usuario (como ya lo tenías)
   if (appState.user) {
     const fn = f('profile-firstname'); if (fn) fn.value = appState.user.firstName || '';
     const ln = f('profile-lastname'); if (ln) ln.value = appState.user.lastName || '';
@@ -1469,7 +1387,6 @@ const updateProfile = () => {
     const sp = f('profile-program'); if (sp) sp.value = appState.user.studyProgram || '';
   }
 
-  // Estadísticas de uso: servidor > fallback cliente
   const tt = f('total-transactions');
   const tg = f('total-goals');
   const cd = f('consecutive-days');
@@ -1479,14 +1396,11 @@ const updateProfile = () => {
     if (tg) tg.textContent = window.usageStats.metas_establecidas ?? 0;
     if (cd) cd.textContent = window.usageStats.dias_consecutivos ?? 0;
   } else {
-    // Fallback (lo que ya hacías)
     if (tt) tt.textContent = appState.transactions.length;
     if (tg) tg.textContent = appState.goals.length;
     if (cd) cd.textContent = calculateConsecutiveDays();
   }
 };
-
-
 
 const calculateConsecutiveDays = () => {
   if (appState.transactions.length === 0) return 0;
@@ -1512,11 +1426,7 @@ const saveProfile = (formData) => {
   };
   updateUserInfo();
   saveToStorage();
-  showToast(
-    "Perfil actualizado",
-    "Tu perfil ha sido actualizado correctamente",
-    "success"
-  );
+  showToast("Perfil actualizado", "Tu perfil ha sido actualizado correctamente", "success");
 };
 
 // Utility helpers
@@ -1559,9 +1469,12 @@ const getIconClass = (icon) => {
   return icons[icon] || "piggy-bank";
 };
 
+// ----- Stubs para evitar ReferenceError si aún no tienes estos modales -----
+function openAddMoneyModal() { /* opcional: implementar modal de agregar dinero */ }
+function closeAddMoneyModal() { /* opcional */ }
+
 // Event Listeners
 document.addEventListener("DOMContentLoaded", () => {
-  // Load data
   const main = document.getElementById('main-app');
   if (main) main.classList.add('active');
   hydrateWeeklyFromServer();
@@ -1603,13 +1516,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById('profile-section') && typeof updateProfile === 'function') {
     updateProfile();
   }
-  // Calendar navigation (si existe)
+
   const prevBtn = document.getElementById("prev-month");
   if (prevBtn) prevBtn.addEventListener("click", previousMonth);
   const nextBtn = document.getElementById("next-month");
   if (nextBtn) nextBtn.addEventListener("click", nextMonth);
 
-  // FORM SUBMITS (protegidos por existencia)
   const loginForm = document.getElementById("login-form");
   if (loginForm) {
     loginForm.addEventListener("submit", (e) => {
@@ -1620,8 +1532,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (err) {
         if (ok) err.classList.remove("show");
         else {
-          err.textContent =
-            "Credenciales incorrectas. Intenta nuevamente o regístrate.";
+          err.textContent = "Credenciales incorrectas. Intenta nuevamente o regístrate.";
           err.classList.add("show");
         }
       }
@@ -1646,12 +1557,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const txForm = document.getElementById("transaction-form");
   if (txForm) {
-    const hasAction = txForm.getAttribute("action"); // si tienes backend, déjalo enviar
+    const hasAction = txForm.getAttribute("action");
     if (!hasAction) {
       txForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const fd = new FormData(txForm);
-        // map id_tipo -> 'income'|'expense'
         const type = fd.get("id_tipo") === "1" ? "income" : "expense";
         saveTransaction({
           type,
@@ -1682,7 +1592,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-
   [
     "reminder-form",
     "add-money-form",
@@ -1695,31 +1604,22 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const fd = new FormData(f);
       if (id === "reminder-form") {
-        // Enviar al servidor para persistir en la BD (crear o actualizar según estado)
         (async () => {
           try {
-            const base = '/FinanceU-/vista/RecordatorioVista.php';
             const isEditServer = !!appState.currentEditingServerId;
             const action = isEditServer ? 'actualizar' : 'crear';
-            const url = (window.location.pathname.replace(/\/index.php.*$/, '') || '/FinanceU-') + '/vista/RecordatorioVista.php?action=' + action;
             const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=' + action;
-            const target = (location.pathname.indexOf('/FinanceU-') !== -1) ? endpoint : url;
 
-            // Si es edición en servidor, agregar id al formdata
             if (isEditServer) fd.append('id', appState.currentEditingServerId);
 
-            const res = await fetch(target, {
-              method: 'POST',
-              body: fd,
-              credentials: 'same-origin'
-            });
+            const res = await fetch(endpoint, { method: 'POST', body: fd, credentials: 'same-origin' });
             const data = await res.json().catch(() => null);
             if (res.ok && data && data.success) {
-              showToast(isEditServer ? 'Recordatorio actualizado' : 'Recordatorio creado', isEditServer ? 'El recordatorio se actualizó en la base de datos' : 'El recordatorioo se guardo correctamente', 'success');
-              // Cerrar modal y recargar para que el listado server-side muestre el nuevo recordatorio
+              showToast(isEditServer ? 'Recordatorio actualizado' : 'Recordatorio creado',
+                        isEditServer ? 'El recordatorio se actualizó en la base de datos' : 'El recordatorio se guardó correctamente',
+                        'success');
               appState.currentEditingServerId = null;
               closeReminderModal();
-              // refrescar lista y calendario desde servidor sin recargar la página
               await refreshRemindersFromServer();
             } else {
               const msg = (data && data.message) ? data.message : 'Error al guardar el recordatorio';
@@ -1743,27 +1643,24 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Filtros de transacciones (si existen)
   const typeFilterEl = document.getElementById("transaction-type-filter");
-  if (typeFilterEl)
-    typeFilterEl.addEventListener("change", updateTransactionsList);
+  if (typeFilterEl) typeFilterEl.addEventListener("change", updateTransactionsList);
   const catFilterEl = document.getElementById("transaction-category-filter");
-  if (catFilterEl)
-    catFilterEl.addEventListener("change", updateTransactionsList);
+  if (catFilterEl) catFilterEl.addEventListener("change", updateTransactionsList);
   const dateFilterEl = document.getElementById("transaction-date-filter");
-  if (dateFilterEl)
-    dateFilterEl.addEventListener("change", updateTransactionsList);
+  if (dateFilterEl) dateFilterEl.addEventListener("change", updateTransactionsList);
 
-  // Cerrar modales al click fuera
   document.querySelectorAll(".modal").forEach((modal) => {
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.classList.remove("active");
     });
   });
 
-  // Inicializaciones condicionales
   const goalsGrid = document.getElementById("goals-grid");
-  if (goalsGrid && typeof updateGoalsList === "function") updateGoalsList();
+  if (goalsGrid) {
+    if (typeof hydrateGoalsFromServer === "function") hydrateGoalsFromServer();
+    if (typeof updateGoalsList === "function") updateGoalsList();
+  }
 
   const calendarEl = document.getElementById("calendar");
   if (calendarEl && typeof updateCalendar === "function") {
@@ -1774,7 +1671,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (next) next.addEventListener("click", nextMonth);
   }
 
-  // Navegación: SPA solo si el link tiene data-spa="true". Si no, deja navegar normal.
   document.addEventListener("click", (e) => {
     const link = e.target.closest("a.nav-link");
     if (!link) return;
@@ -1785,8 +1681,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
-
-
 
 // Expose functions to global scope for HTML onclick handlers
 window.showLanding = showLanding;

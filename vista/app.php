@@ -113,6 +113,30 @@ if ($page === 'transacciones') {
       if (is_file($file)) {
         include $file;
 
+        if ($page === 'metas') {
+          try {
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            $uid = (int)($_SESSION['id_usuario'] ?? 0);
+
+            require_once __DIR__ . '/../modelo/Metas.php'; // usa la ruta/nombre reales
+            $m = new Meta();
+            $metas = $m->obtenerMetas($uid); // ahora es array
+
+            echo '<script>',
+            'window.__PAGE="metas";',
+            'console.log("DBG metas:", ', json_encode($metas), ');',
+            'window.goalsData = ', json_encode($metas), ';',
+            'document.addEventListener("DOMContentLoaded",function(){',
+            '  console.log("DBG hydrate? ", typeof hydrateGoalsFromServer);',
+            '  if (window.hydrateGoalsFromServer) window.hydrateGoalsFromServer();',
+            '});',
+            '</script>';
+          } catch (Throwable $e) {
+            echo '<script>console.error("Metas error:", ', json_encode($e->getMessage()), ');</script>';
+          }
+        }
+
+
         if ($page === 'perfil') {
           require_once __DIR__ . '/../modelo/EstadisticasUso.php';
           $eu = new EstadisticasUso();
