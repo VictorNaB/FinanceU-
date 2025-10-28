@@ -49,6 +49,9 @@ if (isset($_GET['action'])) {
         case 'crearMeta':
             $controladorMetas->crear();
             break;
+        case 'eliminarMeta':
+            $controladorMetas->eliminar();
+            break;
         default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 
             require 'vista/index.php';

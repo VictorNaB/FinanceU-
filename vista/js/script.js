@@ -813,13 +813,29 @@ const saveGoal = (formData) => {
 const editGoal = (goalId) => openGoalModal(goalId);
 
 const deleteGoal = (goalId) => {
-  if (confirm("¿Estás seguro de que quieres eliminar esta meta?")) {
-    appState.goals = appState.goals.filter((g) => g.id !== goalId);
-    updateGoalsList();
-    updateDashboard();
-    saveToStorage();
-    showToast("Meta eliminada", "La meta ha sido eliminada correctamente", "info");
-  }
+  if (!confirm("¿Estás seguro de que quieres eliminar esta meta?")) return;
+
+  // Llamada al backend para eliminar la meta
+  fetch(`index.php?action=eliminarMeta&id=${encodeURIComponent(goalId)}`, {
+    method: 'GET',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(resp => resp.json())
+    .then(data => {
+      if (data && data.success) {
+        appState.goals = appState.goals.filter((g) => g.id !== goalId);
+        updateGoalsList();
+        updateDashboard();
+        saveToStorage();
+        showToast("Meta eliminada", "La meta ha sido eliminada correctamente", "info");
+      } else {
+        showToast("Error", (data && data.message) ? data.message : "No se pudo eliminar la meta", "error");
+      }
+    })
+    .catch(err => {
+      console.error('Error eliminar meta:', err);
+      showToast("Error", "No se pudo conectar con el servidor", "error");
+    });
 };
 
 const openAddProgressModal = (goalId) => {

@@ -74,7 +74,17 @@ class ControladorMeta {
         }
 
         try {
-            
+            $deleted = $this->modelo->eliminarMeta($idMeta);
+
+            // Si la petición viene por AJAX, devolvemos JSON
+            $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => (bool)$deleted]);
+                exit;
+            }
+
+            // Redirección normal
             header('Location: index.php?action=app&page=metas');
             exit;
         } catch (Exception $e) {

@@ -59,4 +59,18 @@ class Meta
             ':id'             => $idMeta
         ]);
     }
+
+    /**
+     * Elimina una meta por su id_meta.
+     * Retorna true si la eliminación fue exitosa, false en caso contrario.
+     */
+    public function eliminarMeta(int $idMeta)
+    {
+        $stmt = $this->conexion->prepare("DELETE FROM Metas WHERE id_meta = ?");
+        if (!$stmt) return false;
+        $stmt->bind_param("i", $idMeta);
+        $res = $stmt->execute();
+        $stmt->close();
+        return $res;
+    }
 }
