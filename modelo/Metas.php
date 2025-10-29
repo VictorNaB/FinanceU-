@@ -91,20 +91,15 @@ class Meta
     }
 
 
-    public function actualizarMeta(int $idMeta, string $nombre, float $montoObjetivo, ?string $fechaLimite = null)
+    public function actualizarMeta(int $idMeta, string $nombre, float $montoObjetivo, ?string $fechaLimite = null, ?string $descripcion = '')
     {
-        $sql = "UPDATE metas
-                   SET nombre = :nombre,
-                       monto_objetivo = :monto_objetivo,
-                       fecha_limite = :fecha_limite
-                 WHERE id = :id";
-        $stmt = $this->conexion->prepare($sql);
-        return $stmt->execute([
-            ':nombre'         => $nombre,
-            ':monto_objetivo' => $montoObjetivo,
-            ':fecha_limite'   => $fechaLimite,
-            ':id'             => $idMeta
-        ]);
+        // Actualiza la meta con los campos proporcionados usando mysqli
+        $stmt = $this->conexion->prepare("UPDATE Metas SET titulo_meta = ?, monto_objetivo = ?, fecha_limite = ?, descripcion = ? WHERE id_meta = ?");
+        if (!$stmt) return false;
+        $stmt->bind_param("sdssi", $nombre, $montoObjetivo, $fechaLimite, $descripcion, $idMeta);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return $ok;
     }
 
     /**

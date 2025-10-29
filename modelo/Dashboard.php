@@ -72,6 +72,8 @@ class Dashboard {
   }
 
   public function getMetasUsuario(int $uid, int $limit=3){
+    // Usa modelo/Meta.php si lo prefieres, aquí un fallback directo:
+    // incluimos monto_actual para poder mostrar el progreso en el dashboard
     $sql = "SELECT id_meta, titulo_meta, monto_objetivo, monto_actual, fecha_limite
       FROM Metas WHERE id_usuario=?
       ORDER BY fecha_limite ASC

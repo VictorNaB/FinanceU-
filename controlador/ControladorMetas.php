@@ -47,16 +47,18 @@ class ControladorMeta {
     public function actualizar() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $idMeta = (int)($_POST['id_meta'] ?? 0);
-            $nombre = trim($_POST['nombre'] ?? '');
+            // Nombres de los inputs coinciden con el formulario en vista/metas.php
+            $nombre = trim($_POST['titulo_meta'] ?? '');
             $montoObjetivo = (float)($_POST['monto_objetivo'] ?? 0);
             $fechaLimite = $_POST['fecha_limite'] ?? '';
+            $descripcion = trim($_POST['descripcion'] ?? '');
 
             if ($idMeta <= 0 || $nombre === '' || $montoObjetivo <= 0) {
                 echo "Datos inválidos"; exit;
             }
 
             try {
-                $this->modelo->actualizarMeta($idMeta, $nombre, $montoObjetivo, $fechaLimite);
+                $this->modelo->actualizarMeta($idMeta, $nombre, $montoObjetivo, $fechaLimite, $descripcion);
                 header('Location: index.php?action=app&page=metas');
                 exit;
             } catch (Exception $e) {

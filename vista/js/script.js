@@ -780,6 +780,8 @@ const openGoalModal = (goalId = null) => {
   const modal = document.getElementById("goal-modal");
   const form = document.getElementById("goal-form");
   const title = document.getElementById("goal-modal-title");
+  const hiddenId = document.getElementById('goal-id');
+  const submitBtn = document.getElementById('goal-submit-button');
   if (!form) return;
 
   form.reset();
@@ -793,12 +795,19 @@ const openGoalModal = (goalId = null) => {
       document.getElementById("goal-amount").value = goal.targetAmount;
       document.getElementById("goal-deadline").value = goal.deadline;
       document.getElementById("goal-description").value = goal.description || "";
+      // Set hidden id and switch form to update
+      if (hiddenId) hiddenId.value = goalId;
+      if (form) form.action = 'index.php?action=actualizarMeta';
+      if (submitBtn) submitBtn.textContent = 'Actualizar Meta';
     }
   } else {
     if (title) title.textContent = "Nueva Meta";
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
     document.getElementById("goal-deadline").value = nextYear.toISOString().split("T")[0];
+    if (hiddenId) hiddenId.value = '';
+    if (form) form.action = 'index.php?action=crearMeta';
+    if (submitBtn) submitBtn.textContent = 'Crear Meta';
   }
 
   if (modal) modal.classList.add("active");

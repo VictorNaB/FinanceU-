@@ -17,6 +17,7 @@
       </div>
       <div class="modal-body" >
         <form id="goal-form" class="modal-form" method="post" action="index.php?action=crearMeta">
+          <input type="hidden" id="goal-id" name="id_meta" value="" />
           <div class="form-group">
             <label for="goal-title">Título de la Meta</label>
             <input type="text" id="goal-title" name="titulo_meta" required>
@@ -39,7 +40,7 @@
 
           <div class="modal-actions">
             <button type="button" class="btn-secondary" onclick="closeGoalModal()">Cancelar</button>
-            <button type="submit" class="btn-primary">Crear Meta</button>
+            <button type="submit" id="goal-submit-button" class="btn-primary">Crear Meta</button>
           </div>
         </form>
       </div>
