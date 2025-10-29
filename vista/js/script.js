@@ -572,15 +572,38 @@ const saveTransaction = (formData) => {
 const editTransaction = (transactionId) => openTransactionModal(transactionId);
 
 const deleteTransaction = (transactionId) => {
-  if (confirm("¿Estás seguro de que quieres eliminar esta transacción?")) {
-    appState.transactions = appState.transactions.filter(
-      (t) => t.id !== transactionId
-    );
-    updateTransactionsList();
-    updateDashboard();
-    saveToStorage();
-    showToast("Transacción eliminada", "La transacción ha sido eliminada correctamente", "info");
-  }
+  if (!confirm("¿Estás seguro de que quieres eliminar esta transacción?")) return;
+
+  // Intentamos eliminar en el backend (si existe la sesión). Si falla, hacemos fallback a la eliminación local
+  fetch(`index.php?action=eliminarTransaccion&id=${encodeURIComponent(transactionId)}`, {
+    method: 'GET',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(resp => resp.json())
+    .then(data => {
+      if (data && data.success) {
+        appState.transactions = appState.transactions.filter((t) => t.id !== transactionId);
+        updateTransactionsList();
+        updateDashboard();
+        saveToStorage();
+        showToast("Transacción eliminada", "La transacción ha sido eliminada correctamente", "info");
+      } else {
+        // Fallback local
+        appState.transactions = appState.transactions.filter((t) => t.id !== transactionId);
+        updateTransactionsList();
+        updateDashboard();
+        saveToStorage();
+        showToast("Transacción eliminada (local)", "No fue posible borrar en el servidor, se eliminó localmente", "warning");
+      }
+    })
+    .catch(() => {
+      // Fallback local si hay error de red
+      appState.transactions = appState.transactions.filter((t) => t.id !== transactionId);
+      updateTransactionsList();
+      updateDashboard();
+      saveToStorage();
+      showToast("Transacción eliminada (local)", "No fue posible conectar con el servidor, se eliminó localmente", "warning");
+    });
 };
 
 const clearFilters = () => {
@@ -663,14 +686,16 @@ function hydrateDashboardFromServer() {
     }).join('');
   })();
 
-  // Progreso de metas (sin progreso en BD: mostramos 0% y datos básicos)
+  // Progreso de metas (mostramos monto_actual y calculamos porcentaje si está disponible)
   (function drawGoals() {
     const container = document.getElementById('goals-progress');
     if (!container) return;
     const goals = window.dashboardData.goals || [];
     if (!goals.length) { container.innerHTML = '<p class="text-center">No hay metas creadas</p>'; return; }
     container.innerHTML = goals.slice(0, 3).map(g => {
-      const pct = 0; // no hay progreso en BD
+      const current = Number(g.monto_actual || 0);
+      const target = Number(g.monto_objetivo || 0);
+      const pct = target > 0 ? Math.min(Math.round((current / target) * 100), 100) : 0;
       return `
         <div style="margin-bottom:1rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
@@ -679,7 +704,8 @@ function hydrateDashboardFromServer() {
           </div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;"></div></div>
           <div style="display:flex;justify-content:space-between;font-size:.875rem;color:var(--muted-foreground);margin-top:.25rem;">
-            <span>Meta: ${toCOP(g.monto_objetivo)}</span>
+            <span>Meta: ${toCOP(target)}</span>
+            <span>Actual: ${toCOP(current)}</span>
             <span>Vence: ${formatDate(g.fecha_limite)}</span>
           </div>
         </div>`;

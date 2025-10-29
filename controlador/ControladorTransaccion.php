@@ -50,4 +50,29 @@ class ControladorTransaccion
         $transacciones = $this->modelo->obtenerTransacciones($id_usuario);
         require 'vista/transacciones.php';
     }
+
+    public function eliminar()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        if ($id <= 0) {
+            echo "ID inválido";
+            exit;
+        }
+
+        try {
+            $ok = $this->modelo->eliminarTransaccion($id);
+
+            $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => (bool)$ok]);
+                exit;
+            }
+
+            header('Location: index.php?action=app&page=transacciones');
+            exit;
+        } catch (Exception $e) {
+            echo "Error al eliminar transacción: " . $e->getMessage();
+        }
+    }
 }

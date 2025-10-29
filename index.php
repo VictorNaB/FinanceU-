@@ -42,6 +42,9 @@ if (isset($_GET['action'])) {
             // Llamar al método que maneja la creación de una transacción
             $controladorTransaccion->crear();
             break;
+        case 'eliminarTransaccion':
+            $controladorTransaccion->eliminar();
+            break;
         case 'cerrarSesion':
             // Llamar al método que maneja el cierre de sesión 
             $controlador->cerrarSesion();

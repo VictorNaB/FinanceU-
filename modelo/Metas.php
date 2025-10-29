@@ -113,11 +113,44 @@ class Meta
      */
     public function eliminarMeta(int $idMeta)
     {
-        $stmt = $this->conexion->prepare("DELETE FROM Metas WHERE id_meta = ?");
-        if (!$stmt) return false;
-        $stmt->bind_param("i", $idMeta);
-        $res = $stmt->execute();
-        $stmt->close();
-        return $res;
+        // Hacemos todo en una transacción: borrar la meta y decrementar el contador en EstadisticasUso
+        $this->conexion->begin_transaction();
+        try {
+            $meta = $this->obtenerMetaPorId($idMeta);
+            if (!$meta) {
+                $this->conexion->rollback();
+                return false;
+            }
+
+            $idUsuario = (int)$meta['id_usuario'];
+
+            $stmt = $this->conexion->prepare("DELETE FROM Metas WHERE id_meta = ?");
+            if (!$stmt) {
+                $this->conexion->rollback();
+                return false;
+            }
+            $stmt->bind_param("i", $idMeta);
+            $ok = $stmt->execute();
+            $stmt->close();
+
+            if (!$ok) {
+                $this->conexion->rollback();
+                return false;
+            }
+
+            // Decrementar metas_establecidas (sin bajar de 0)
+            $stmt2 = $this->conexion->prepare("UPDATE EstadisticasUso SET metas_establecidas = GREATEST(metas_establecidas - 1, 0) WHERE id_usuario = ?");
+            if ($stmt2) {
+                $stmt2->bind_param("i", $idUsuario);
+                $stmt2->execute();
+                $stmt2->close();
+            }
+
+            $this->conexion->commit();
+            return true;
+        } catch (Throwable $e) {
+            $this->conexion->rollback();
+            return false;
+        }
     }
 }

@@ -22,7 +22,21 @@ class Dashboard {
     $st->close();
     $res = ['ingresos'=>(float)$res['ingresos'], 'gastos'=>(float)$res['gastos']];
     $res['balance'] = $res['ingresos'] - $res['gastos'];
-    $res['ahorro']  = 0; // ajusta si tienes tabla de ahorros
+    // Calculamos ahorro como la suma de monto_actual en las metas del usuario
+    try {
+      $st2 = $this->cn->prepare("SELECT COALESCE(SUM(monto_actual),0) AS ahorro FROM Metas WHERE id_usuario=?");
+      if ($st2) {
+        $st2->bind_param('i', $uid);
+        $st2->execute();
+        $r2 = $st2->get_result()->fetch_assoc() ?: ['ahorro' => 0];
+        $st2->close();
+        $res['ahorro'] = (float)$r2['ahorro'];
+      } else {
+        $res['ahorro'] = 0;
+      }
+    } catch (Throwable $e) {
+      $res['ahorro'] = 0;
+    }
     return $res;
   }
 
@@ -58,11 +72,10 @@ class Dashboard {
   }
 
   public function getMetasUsuario(int $uid, int $limit=3){
-    // Usa modelo/Meta.php si lo prefieres, aquí un fallback directo:
-    $sql = "SELECT id_meta, titulo_meta, monto_objetivo, fecha_limite
-            FROM Metas WHERE id_usuario=?
-            ORDER BY fecha_limite ASC
-            LIMIT ?";
+    $sql = "SELECT id_meta, titulo_meta, monto_objetivo, monto_actual, fecha_limite
+      FROM Metas WHERE id_usuario=?
+      ORDER BY fecha_limite ASC
+      LIMIT ?";
     $st = $this->cn->prepare($sql);
     if (!$st) throw new Exception('prepare metas: '.$this->cn->error);
     $st->bind_param('ii', $uid, $limit);

@@ -89,4 +89,57 @@ class Transaccion
         $stmt->execute();
         return $stmt->get_result();
     }
+
+    /**
+     * Elimina una transacción por su id_transaccion y actualiza EstadisticasUso
+     */
+    public function eliminarTransaccion(int $idTransaccion)
+    {
+        $this->conexion->begin_transaction();
+        try {
+            $stmt = $this->conexion->prepare("SELECT id_usuario FROM Transaccion WHERE id_transaccion = ? LIMIT 1");
+            if (!$stmt) { $this->conexion->rollback(); return false; }
+            $stmt->bind_param("i", $idTransaccion);
+            $stmt->execute();
+            $res = $stmt->get_result();
+            $row = $res ? $res->fetch_assoc() : null;
+            $stmt->close();
+
+            if (!$row) {
+                $this->conexion->rollback();
+                return false;
+            }
+
+            $idUsuario = (int)$row['id_usuario'];
+
+            $del = $this->conexion->prepare("DELETE FROM Transaccion WHERE id_transaccion = ?");
+            if (!$del) { $this->conexion->rollback(); return false; }
+            $del->bind_param("i", $idTransaccion);
+            $ok = $del->execute();
+            $del->close();
+
+            if (!$ok) {
+                $this->conexion->rollback();
+                return false;
+            }
+
+            // Decrementar transacciones_registradas (sin bajar de 0)
+            $stmt2 = $this->conexion->prepare("UPDATE EstadisticasUso SET transacciones_registradas = GREATEST(transacciones_registradas - 1, 0) WHERE id_usuario = ?");
+            if ($stmt2) {
+                $stmt2->bind_param("i", $idUsuario);
+                $stmt2->execute();
+                $stmt2->close();
+            }
+
+            // Recalcular días consecutivos y guardar
+            $dias = $this->diasConsecutivos($idUsuario);
+            $this->eu->setDiasConsecutivos($idUsuario, (int)$dias);
+
+            $this->conexion->commit();
+            return true;
+        } catch (Throwable $e) {
+            $this->conexion->rollback();
+            return false;
+        }
+    }
 }
