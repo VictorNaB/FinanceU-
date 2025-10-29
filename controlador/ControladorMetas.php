@@ -93,19 +93,55 @@ class ControladorMeta {
     }
 
     public function registrarProgreso() {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $idUsuario = (int)($_SESSION['id_usuario'] ?? 0);
+
         $idMeta = (int)($_POST['id_meta'] ?? 0);
         $monto = (float)($_POST['monto'] ?? 0);
 
+        header('Content-Type: application/json');
+
+        if ($idUsuario <= 0) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'No autenticado']);
+            exit;
+        }
+
         if ($idMeta <= 0 || $monto <= 0) {
-            echo "Datos inválidos"; exit;
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Datos inválidos']);
+            exit;
         }
 
         try {
-           
-            header('Location: index.php?action=app&page=metas');
+            $meta = $this->modelo->obtenerMetaPorId($idMeta);
+            if (!$meta || (int)$meta['id_usuario'] !== $idUsuario) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'Meta no encontrada o no pertenece al usuario']);
+                exit;
+            }
+
+            $nuevo = $this->modelo->sumarProgreso($idMeta, $monto);
+            if ($nuevo === false) {
+                http_response_code(500);
+                echo json_encode(['success' => false, 'message' => 'Error al actualizar el progreso en la base de datos']);
+                exit;
+            }
+
+            $objetivo = floatval($meta['monto_objetivo'] ?? 0);
+            $porcentaje = $objetivo > 0 ? round(($nuevo / $objetivo) * 100, 2) : 0;
+
+            echo json_encode([
+                'success' => true,
+                'new_amount' => $nuevo,
+                'objective' => $objetivo,
+                'percentage' => $porcentaje,
+            ]);
             exit;
         } catch (Exception $e) {
-            echo "Error al registrar el progreso: " . $e->getMessage();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Error al registrar el progreso: ' . $e->getMessage()]);
+            exit;
         }
     }
 }

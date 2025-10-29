@@ -844,6 +844,45 @@ const openAddProgressModal = (goalId) => {
   if (!form) return;
   form.reset();
   appState.currentEditingId = goalId;
+
+  // populate min/max and preview fields based on the selected goal
+  const goal = appState.goals.find((g) => g.id === goalId);
+  const amountInput = document.getElementById('progress-amount');
+  const currentLabel = document.getElementById('add-progress-current');
+  const targetLabel = document.getElementById('add-progress-target');
+  const previewFill = document.getElementById('add-progress-preview-fill');
+  const percentLabel = document.getElementById('add-progress-percent');
+
+  if (goal) {
+    const cur = Number(goal.currentAmount || 0);
+    const tgt = Number(goal.targetAmount || 0);
+    // user requested min = 0 and max = monto de la meta
+    amountInput.setAttribute('min', 0);
+    amountInput.setAttribute('max', tgt);
+    amountInput.setAttribute('placeholder', `Máx ${tgt}`);
+
+    currentLabel.textContent = `Actual: ${formatCurrency(cur)}`;
+    targetLabel.textContent = `Meta: ${formatCurrency(tgt)}`;
+
+    const pct = Math.min((cur / Math.max(tgt, 1)) * 100, 100);
+    previewFill.style.width = pct + '%';
+    percentLabel.textContent = `${pct.toFixed(1)}% completado`;
+
+    // live preview when user types an amount
+    const updatePreview = () => {
+      const v = Number(newAmountInput.value || 0);
+      const newTotal = cur + v;
+      const newPct = Math.min((newTotal / Math.max(tgt, 1)) * 100, 100);
+      previewFill.style.width = newPct + '%';
+      percentLabel.textContent = `${newPct.toFixed(1)}% completado`;
+    };
+
+    // remove previous listeners by replacing input node, then attach
+    const newAmountInput = amountInput.cloneNode(true);
+    amountInput.parentNode.replaceChild(newAmountInput, amountInput);
+    newAmountInput.addEventListener('input', updatePreview);
+  }
+
   if (modal) modal.classList.add("active");
 };
 
@@ -855,24 +894,90 @@ const closeAddProgressModal = () => {
 
 const addProgressToGoal = (amount) => {
   const idx = appState.goals.findIndex((g) => g.id === appState.currentEditingId);
-  if (idx !== -1) {
-    appState.goals[idx].currentAmount += parseInt(amount);
-    const goal = appState.goals[idx];
-    appState.transactions.push({
-      id: generateId(),
-      type: "expense",
-      description: `Progreso en meta: ${goal.title}`,
-      amount: parseInt(amount),
-      category: "savings",
-      date: new Date().toISOString().split("T")[0],
-    });
-    updateGoalsList();
-    updateTransactionsList();
-    updateDashboard();
-    saveToStorage();
-    closeAddProgressModal();
-    showToast("Progreso agregado", `Se agregaron ${formatCurrency(amount)} a la meta`, "success");
+  if (idx === -1) return;
+
+  const goal = appState.goals[idx];
+  const parsedAmount = Number(amount || 0);
+  if (isNaN(parsedAmount) || parsedAmount <= 0) {
+    showToast('Error', 'Ingrese un monto válido', 'error');
+    return;
   }
+
+  // Try to persist on server; if it fails, fallback to local-only update
+  (async () => {
+    try {
+      const formData = new FormData();
+      formData.append('id_meta', goal.id);
+      formData.append('monto', parsedAmount);
+
+      const res = await fetch('index.php?action=registrarProgreso', {
+        method: 'POST',
+        body: formData,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data && data.success) {
+          // update local state with canonical value returned by server
+          appState.goals[idx].currentAmount = Number(data.new_amount || data.new_amount === 0 ? data.new_amount : appState.goals[idx].currentAmount + parsedAmount);
+          // add a local transaction record for UI/history
+          appState.transactions.push({
+            id: generateId(),
+            type: 'expense',
+            description: `Progreso en meta: ${goal.title}`,
+            amount: parsedAmount,
+            category: 'savings',
+            date: new Date().toISOString().split('T')[0]
+          });
+
+          updateGoalsList();
+          updateTransactionsList();
+          updateDashboard();
+          saveToStorage();
+          closeAddProgressModal();
+          showToast('Progreso agregado', `Se agregaron ${formatCurrency(parsedAmount)} a la meta`, 'success');
+          return;
+        }
+      }
+
+      // fallback: local update
+      appState.goals[idx].currentAmount = (appState.goals[idx].currentAmount || 0) + parsedAmount;
+      appState.transactions.push({
+        id: generateId(),
+        type: 'expense',
+        description: `Progreso en meta: ${goal.title}`,
+        amount: parsedAmount,
+        category: 'savings',
+        date: new Date().toISOString().split('T')[0]
+      });
+      updateGoalsList();
+      updateTransactionsList();
+      updateDashboard();
+      saveToStorage();
+      closeAddProgressModal();
+      showToast('Progreso agregado (local)', `Se agregaron ${formatCurrency(parsedAmount)} a la meta (no se guardó en servidor)`, 'info');
+    } catch (err) {
+      console.error('Error registrar progreso:', err);
+      // fallback local
+      appState.goals[idx].currentAmount = (appState.goals[idx].currentAmount || 0) + parsedAmount;
+      appState.transactions.push({
+        id: generateId(),
+        type: 'expense',
+        description: `Progreso en meta: ${goal.title}`,
+        amount: parsedAmount,
+        category: 'savings',
+        date: new Date().toISOString().split('T')[0]
+      });
+      updateGoalsList();
+      updateTransactionsList();
+      updateDashboard();
+      saveToStorage();
+      closeAddProgressModal();
+      showToast('Progreso agregado (local)', `Se agregaron ${formatCurrency(parsedAmount)} a la meta (error de red)`, 'info');
+    }
+  })();
 };
 
 function hydrateWeeklyFromServer() {

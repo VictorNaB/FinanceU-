@@ -71,6 +71,7 @@ CREATE TABLE Metas (
     id_usuario INT NOT NULL,
     titulo_meta VARCHAR(150) NOT NULL,
     monto_objetivo DECIMAL(12,2) NOT NULL,
+    monto_actual DECIMAL(12,2) NOT NULL DEFAULT 0,
     fecha_limite DATE NOT NULL,
     descripcion TEXT NOT NULL,
     FOREIGN KEY (id_usuario) REFERENCES Usuarios(id_usuario)

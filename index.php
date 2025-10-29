@@ -49,6 +49,9 @@ if (isset($_GET['action'])) {
         case 'crearMeta':
             $controladorMetas->crear();
             break;
+        case 'registrarProgreso':
+            $controladorMetas->registrarProgreso();
+            break;
         case 'eliminarMeta':
             $controladorMetas->eliminar();
             break;
