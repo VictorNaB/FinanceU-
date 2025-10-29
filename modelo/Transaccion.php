@@ -109,7 +109,6 @@ class Transaccion
                 $this->conexion->rollback();
                 return false;
             }
-
             $idUsuario = (int)$row['id_usuario'];
 
             $del = $this->conexion->prepare("DELETE FROM Transaccion WHERE id_transaccion = ?");
