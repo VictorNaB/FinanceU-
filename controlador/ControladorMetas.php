@@ -69,28 +69,56 @@ class ControladorMeta {
 
   
     public function eliminar() {
-        $idMeta = (int)($_GET['id'] ?? 0);
+        // Aceptamos GET o POST (fetch puede usar POST). Usamos REQUEST para mayor flexibilidad.
+        if (session_status() === PHP_SESSION_NONE) session_start();
+
+        $idMeta = (int)($_REQUEST['id'] ?? 0);
+
+        header('Content-Type: application/json');
 
         if ($idMeta <= 0) {
-            echo "ID de meta inválido"; exit;
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'ID de meta inválido']);
+            exit;
+        }
+
+        // Verificamos que el usuario esté autenticado y que la meta pertenezca al usuario
+        $idUsuario = (int)($_SESSION['id_usuario'] ?? 0);
+        if ($idUsuario <= 0) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'message' => 'No autenticado']);
+            exit;
         }
 
         try {
-            $deleted = $this->modelo->eliminarMeta($idMeta);
-
-            // Si la petición viene por AJAX, devolvemos JSON
-            $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
-            if ($isAjax) {
-                header('Content-Type: application/json');
-                echo json_encode(['success' => (bool)$deleted]);
+            $meta = $this->modelo->obtenerMetaPorId($idMeta);
+            if (!$meta) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'message' => 'Meta no encontrada']);
                 exit;
             }
 
-            // Redirección normal
-            header('Location: index.php?action=app&page=metas');
+            if ((int)$meta['id_usuario'] !== $idUsuario) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'message' => 'No tienes permiso para eliminar esta meta']);
+                exit;
+            }
+
+            $deleted = $this->modelo->eliminarMeta($idMeta);
+
+            if ($deleted) {
+                echo json_encode(['success' => true, 'message' => 'Meta eliminada correctamente']);
+                exit;
+            }
+
+            // Si el modelo devolvió false sin excepción, respondemos con error genérico
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'No se pudo eliminar la meta']);
             exit;
         } catch (Exception $e) {
-            echo "Error al eliminar la meta: " . $e->getMessage();
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'Error al eliminar la meta: ' . $e->getMessage()]);
+            exit;
         }
     }
 

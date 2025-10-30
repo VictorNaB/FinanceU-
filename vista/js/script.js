@@ -936,9 +936,17 @@ const editGoal = (goalId) => openGoalModal(goalId);
 const deleteGoal = (goalId) => {
   if (!confirm("¿Estás seguro de que quieres eliminar esta meta?")) return;
 
-  fetch(`index.php?action=eliminarMeta&id=${encodeURIComponent(goalId)}`, {
-    method: 'GET',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  // Usamos POST para operaciones que modifican datos en servidor
+  const body = new URLSearchParams();
+  body.append('id', goalId);
+
+  fetch(`index.php?action=eliminarMeta`, {
+    method: 'POST',
+    headers: {
+      'X-Requested-With': 'XMLHttpRequest',
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: body.toString()
   })
     .then(resp => resp.json())
     .then(data => {
@@ -947,7 +955,7 @@ const deleteGoal = (goalId) => {
         updateGoalsList();
         updateDashboard();
         saveToStorage();
-        showToast("Meta eliminada", "La meta ha sido eliminada correctamente", "info");
+        showToast("Meta eliminada", data.message || "La meta ha sido eliminada correctamente", "info");
       } else {
         showToast("Error", (data && data.message) ? data.message : "No se pudo eliminar la meta", "error");
       }

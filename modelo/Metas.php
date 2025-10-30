@@ -121,16 +121,18 @@ class Meta
 
             $stmt = $this->conexion->prepare("DELETE FROM Metas WHERE id_meta = ?");
             if (!$stmt) {
+                $err = $this->conexion->error;
                 $this->conexion->rollback();
-                return false;
+                throw new Exception('Error prepare(delete): ' . $err);
             }
             $stmt->bind_param("i", $idMeta);
             $ok = $stmt->execute();
             $stmt->close();
 
-            if (!$ok) {
+            if ($ok === false) {
+                $err = $this->conexion->error;
                 $this->conexion->rollback();
-                return false;
+                throw new Exception('Error execute(delete): ' . $err);
             }
 
             // Decrementar metas_establecidas (sin bajar de 0)
@@ -145,7 +147,8 @@ class Meta
             return true;
         } catch (Throwable $e) {
             $this->conexion->rollback();
-            return false;
+            // Re-throw para que el controlador pueda informar del error
+            throw new Exception($e->getMessage(), $e->getCode(), $e);
         }
     }
 }
