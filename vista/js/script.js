@@ -429,9 +429,22 @@ const updateTrendChart = () => {
   const draw = async () => {
     await ensureTransactionsLoaded();
 
+    // Si después del fetch no hay transacciones, intentar usar datos embebidos en window.dashboardData
+    if ((!appState.transactions || appState.transactions.length === 0) && Array.isArray(window.dashboardData?.recentTransactions) && window.dashboardData.recentTransactions.length) {
+      appState.transactions = window.dashboardData.recentTransactions.map(r => ({
+        id: String(r.id_transaccion || r.id || ''),
+        description: r.descripcion || r.description || '',
+        amount: Number(r.monto || r.amount || 0),
+        category: String(r.idCategoriaTransaccion || r.id_categoria || r.category || ''),
+        type: (Number(r.idtipo_transaccion || r.id_tipo || r.type) === 1) ? 'income' : 'expense',
+        date: r.fecha || r.date || ''
+      }));
+    }
+
     const monthsData = [];
-  const currentDate = new Date();
-  for (let i = 5; i >= 0; i--) {
+    const currentDate = new Date();
+    // Mostrar últimos 12 meses (incluye mes actual)
+    for (let i = 11; i >= 0; i--) {
     const date = new Date(
       currentDate.getFullYear(),
       currentDate.getMonth() - i,
@@ -450,14 +463,17 @@ const updateTrendChart = () => {
     const expenses = monthTx
       .filter((t) => t.type === "expense")
       .reduce((s, t) => s + t.amount, 0);
-    monthsData.push({
-      month: date.toLocaleDateString("es-CO", { month: "short" }),
-      income,
-      expenses,
-    });
+      monthsData.push({
+        month: date.toLocaleDateString("es-CO", { month: "short" }),
+        income,
+        expenses,
+      });
   }
 
-  new Chart(ctx, {
+    // destruir chart previo si existe
+    if (canvas._chart) { canvas._chart.destroy(); canvas._chart = null; }
+
+    canvas._chart = new Chart(ctx, {
     type: "line",
     data: {
       labels: monthsData.map((m) => m.month),
@@ -485,7 +501,7 @@ const updateTrendChart = () => {
       },
       plugins: { legend: { position: "bottom" } },
     },
-  });
+    });
   };
 
   // Ejecutar dibujo (maneja carga asíncrona si hace falta)
@@ -882,6 +898,11 @@ function hydrateDashboardFromServer() {
         </div>`;
     }).join('');
   })();
+
+  // Dibujar la tendencia mensual usando las transacciones del cliente o cargándolas si es necesario
+  if (typeof updateTrendChart === 'function') {
+    try { updateTrendChart(); } catch (e) { console.error('Error dibujando trend chart:', e); }
+  }
 }
 
 // --- GLOBAL: hidrata metas desde el backend ---
