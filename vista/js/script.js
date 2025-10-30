@@ -25,11 +25,28 @@ const formatCurrency = (amount) => {
 };
 
 const formatDate = (date) => {
-  return new Date(date).toLocaleDateString("es-CO", {
+  // Parse date-only strings as local dates to avoid timezone shifts (YYYY-MM-DD)
+  const parseDateOnly = (s) => {
+    if (!s) return new Date(s);
+    const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    return new Date(s);
+  };
+
+  const d = (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) ? parseDateOnly(date) : new Date(date);
+  return d.toLocaleDateString("es-CO", {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
+};
+
+// Helper reutilizable: parsear una fecha ISO 'YYYY-MM-DD' como fecha local (midnight local)
+const parseDateOnly = (s) => {
+  if (!s) return new Date(s);
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return new Date(s);
 };
 
 const escapeHtml = (unsafe) => {
@@ -44,6 +61,11 @@ const escapeHtml = (unsafe) => {
 
 const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
+};
+
+// Helper: formato local YYYY-MM-DD para inputs tipo date (evita usar toISOString que usa UTC)
+const toLocalDateInput = (d = new Date()) => {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
 const saveToStorage = () => {
@@ -239,7 +261,7 @@ const updateStats = () => {
   const currentYear = new Date().getFullYear();
 
   const monthlyTransactions = appState.transactions.filter((t) => {
-    const d = new Date(t.date);
+    const d = (typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) ? parseDateOnly(t.date) : new Date(t.date);
     return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
   });
 
@@ -318,7 +340,11 @@ const updateRecentTransactions = () => {
   if (!container) return;
 
   const recent = [...appState.transactions]
-    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .sort((a, b) => {
+      const da = (typeof a.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(a.date)) ? parseDateOnly(a.date) : new Date(a.date);
+      const db = (typeof b.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.date)) ? parseDateOnly(b.date) : new Date(b.date);
+      return db - da;
+    })
     .slice(0, 5);
   if (recent.length === 0) {
     container.innerHTML =
@@ -388,7 +414,7 @@ const updateTrendChart = () => {
       1
     );
     const monthTx = appState.transactions.filter((t) => {
-      const d = new Date(t.date);
+      const d = (typeof t.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.date)) ? parseDateOnly(t.date) : new Date(t.date);
       return (
         d.getMonth() === date.getMonth() &&
         d.getFullYear() === date.getFullYear()
@@ -439,6 +465,32 @@ const updateTrendChart = () => {
 };
 
 // Transaction Functions
+// Hidrata transacciones desde las filas renderizadas por el servidor (si existen)
+const hydrateTransactionsFromDOM = () => {
+  const tbody = document.getElementById('transactions-tbody');
+  if (!tbody) return;
+  const rows = Array.from(tbody.querySelectorAll('tr[data-id-transaccion]'));
+  if (!rows.length) return;
+
+  appState.transactions = rows.map((tr) => {
+    const id = tr.dataset.idTransaccion || tr.getAttribute('data-id-transaccion') || '';
+    const tipo = tr.dataset.idTipo || tr.getAttribute('data-id-tipo') || '';
+    const categoria = tr.dataset.idCategoria || tr.getAttribute('data-id-categoria') || '';
+    const descripcion = tr.dataset.descripcion || tr.getAttribute('data-descripcion') || '';
+    const monto = tr.dataset.monto || tr.getAttribute('data-monto') || '';
+    const fecha = tr.dataset.fecha || tr.getAttribute('data-fecha') || '';
+
+    return {
+      id: String(id),
+      description: descripcion,
+      amount: Number(monto || 0),
+      category: String(categoria),
+      type: (String(tipo) === '1') ? 'income' : 'expense',
+      date: fecha
+    };
+  });
+};
+
 const updateTransactionsList = () => {
   const tbody = document.getElementById("transactions-tbody");
   if (!tbody) return;
@@ -450,6 +502,11 @@ const updateTransactionsList = () => {
   const typeFilter = typeSel ? typeSel.value : "all";
   const categoryFilter = catSel ? catSel.value : "all";
   const dateFilter = dateInp ? dateInp.value : "";
+
+  // Si no tenemos transacciones en el estado, intentamos hidratarlas desde el DOM (render server-side)
+  if ((!appState.transactions || appState.transactions.length === 0) && tbody.querySelectorAll('tr[data-id-transaccion]').length) {
+    hydrateTransactionsFromDOM();
+  }
 
   let filtered = [...appState.transactions];
 
@@ -545,7 +602,7 @@ const openTransactionModal = (transactionId = null) => {
     }
   } else {
     if (title) title.textContent = "Nueva Transacción";
-    document.getElementById("transaction-date").value = new Date().toISOString().split("T")[0];
+  document.getElementById("transaction-date").value = toLocalDateInput();
     removeHiddenIdFromForm();
     form.setAttribute("action", "index.php?action=crearTransaccion");
   }
@@ -890,7 +947,7 @@ const openGoalModal = (goalId = null) => {
     if (title) title.textContent = "Nueva Meta";
     const nextYear = new Date();
     nextYear.setFullYear(nextYear.getFullYear() + 1);
-    document.getElementById("goal-deadline").value = nextYear.toISOString().split("T")[0];
+  document.getElementById("goal-deadline").value = toLocalDateInput(nextYear);
     if (hiddenId) hiddenId.value = '';
     if (form) form.action = 'index.php?action=crearMeta';
     if (submitBtn) submitBtn.textContent = 'Crear Meta';
@@ -1359,7 +1416,8 @@ const updateCalendarDisplay = () => {
   for (let i = 0; i < 42; i++) {
     const isCurrentMonth = currentDate.getMonth() === appState.currentMonth;
     const isToday = currentDate.toDateString() === today.toDateString();
-    const dateString = currentDate.toISOString().split("T")[0];
+  // Build local YYYY-MM-DD string to compare with server-side dates (which are local)
+  const dateString = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
     const hasReminder = appState.reminders.some((r) => r.date === dateString);
 
     let classes = "calendar-day";
@@ -1389,8 +1447,9 @@ const updateRemindersList = () => {
 
   const upcoming = appState.reminders
     .filter((r) => {
-      const d = new Date(r.date);
-      return d >= today && d <= in30;
+    // r.date is expected as YYYY-MM-DD: parse as local date
+    const d = parseDateOnly(r.date);
+    return d >= today && d <= in30;
     })
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
@@ -1463,7 +1522,7 @@ const openReminderModal = (reminderId = null) => {
   } else {
     if (title) title.textContent = "Nuevo Recordatorio";
     const d = document.getElementById("reminder-date");
-    if (d) d.value = new Date().toISOString().split("T")[0];
+  if (d) d.value = toLocalDateInput();
   }
 
   if (modal) modal.classList.add("active");
@@ -1605,7 +1664,8 @@ const refreshRemindersFromServer = async () => {
           const monto = montoVal > 0 ? `\$ ${montoVal.toLocaleString('es-CO')}` : '';
           const fechaRaw = r.fecha || '';
           const today = new Date();
-          const d = new Date(fechaRaw + 'T00:00:00');
+          // parse fechaRaw as local date to avoid timezone shifts
+          const d = parseDateOnly(fechaRaw);
           const diffDays = Math.ceil((d - new Date(today.getFullYear(), today.getMonth(), today.getDate())) / (1000 * 60 * 60 * 24));
           let diasTxt = '';
           if (diffDays === 0) diasTxt = '(Hoy)';
@@ -1667,10 +1727,10 @@ const updateProfile = () => {
 const calculateConsecutiveDays = () => {
   if (appState.transactions.length === 0) return 0;
   const dates = [...new Set(appState.transactions.map((t) => t.date))].sort();
-  const today = new Date().toISOString().split("T")[0];
+  const today = toLocalDateInput();
   let consecutiveDays = 0;
   const currentDate = new Date(today);
-  while (dates.includes(currentDate.toISOString().split("T")[0])) {
+  while (dates.includes(toLocalDateInput(currentDate))) {
     consecutiveDays++;
     currentDate.setDate(currentDate.getDate() - 1);
   }
@@ -1741,6 +1801,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (main) main.classList.add('active');
   hydrateWeeklyFromServer();
   loadFromStorage();
+
+  // Si la tabla de transacciones fue renderizada por el servidor, hidrátala al cargar
+  const transactionsTbody = document.getElementById('transactions-tbody');
+  if (transactionsTbody && (!appState.transactions || appState.transactions.length === 0)) {
+    try {
+      hydrateTransactionsFromDOM();
+      // Si estamos en la sección de transacciones, actualizar lista inmediatamente
+      if (document.getElementById('transactions-section')) updateTransactionsList();
+    } catch (e) {
+      console.error('Error hidratando transacciones desde DOM:', e);
+    }
+  }
 
   setTimeout(() => {
     const heroCanvas = document.getElementById("hero-chart");
