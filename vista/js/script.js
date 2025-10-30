@@ -843,6 +843,7 @@ const updateGoalsList = () => {
       <div class="goal-card">
         <div class="goal-header">
           <h3 class="goal-title">${goal.title}</h3>
+          ${goal.description ? `<p class="goal-description" style="color:var(--muted-foreground);margin-top:.25rem;margin-bottom:.25rem;">${goal.description}</p>` : ''}
           <div class="goal-deadline">${daysLeft > 0 ? `${daysLeft} días restantes` : "Vencida"} • ${formatDate(goal.deadline)}</div>
         </div>
         <div class="goal-amount">
