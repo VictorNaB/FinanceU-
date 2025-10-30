@@ -345,6 +345,7 @@ const updateRecentTransactions = () => {
     .join("");
 };
 
+
 const updateGoalsProgress = () => {
   const container = document.getElementById("goals-progress");
   if (!container) return;
@@ -505,7 +506,7 @@ const ensureHiddenIdInForm = (id) => {
     hid = document.createElement('input');
     hid.type = 'hidden';
     hid.name = 'id_transaccion';
-    hid.id   = 'transaction-id';
+    hid.id = 'transaction-id';
     form.appendChild(hid);
   }
   hid.value = String(id);
@@ -522,7 +523,7 @@ const removeHiddenIdFromForm = () => {
 
 const openTransactionModal = (transactionId = null) => {
   const modal = document.getElementById("transaction-modal");
-  const form  = document.getElementById("transaction-form");
+  const form = document.getElementById("transaction-form");
   const title = document.getElementById("transaction-modal-title");
 
   if (!form) return;
@@ -534,19 +535,19 @@ const openTransactionModal = (transactionId = null) => {
     const t = appState.transactions.find((x) => x.id === transactionId);
     if (t) {
       if (title) title.textContent = "Editar Transacción";
-      document.getElementById("transaction-type").value      = (t.type === "income" ? "1" : "2");
+      document.getElementById("transaction-type").value = (t.type === "income" ? "1" : "2");
       document.getElementById("transaction-description").value = t.description;
-      document.getElementById("transaction-amount").value    = t.amount;
-      document.getElementById("transaction-category").value  = t.category;
-      document.getElementById("transaction-date").value      = t.date;
+      document.getElementById("transaction-amount").value = t.amount;
+      document.getElementById("transaction-category").value = t.category;
+      document.getElementById("transaction-date").value = t.date;
       ensureHiddenIdInForm(String(transactionId));
-      form.setAttribute("action","index.php?action=actualizarTransaccion");
+      form.setAttribute("action", "index.php?action=actualizarTransaccion");
     }
   } else {
     if (title) title.textContent = "Nueva Transacción";
     document.getElementById("transaction-date").value = new Date().toISOString().split("T")[0];
     removeHiddenIdFromForm();
-    form.setAttribute("action","index.php?action=crearTransaccion");
+    form.setAttribute("action", "index.php?action=crearTransaccion");
   }
 
   if (modal) modal.classList.add("active");
@@ -678,11 +679,11 @@ const editServerTransaction = (id) => {
   const title = document.getElementById("transaction-modal-title");
   if (title) title.textContent = "Editar Transacción";
 
-  document.getElementById("transaction-type").value        = (tr.dataset.idTipo === '1' ? '1' : '2');
+  document.getElementById("transaction-type").value = (tr.dataset.idTipo === '1' ? '1' : '2');
   document.getElementById("transaction-description").value = tr.dataset.descripcion || '';
-  document.getElementById("transaction-amount").value      = tr.dataset.monto || '';
-  document.getElementById("transaction-category").value    = tr.dataset.idCategoria || ''; // 🔹 corregido
-  document.getElementById("transaction-date").value        = tr.dataset.fecha || '';
+  document.getElementById("transaction-amount").value = tr.dataset.monto || '';
+  document.getElementById("transaction-category").value = tr.dataset.idCategoria || ''; // 🔹 corregido
+  document.getElementById("transaction-date").value = tr.dataset.fecha || '';
 
   ensureHiddenIdInForm(String(id));
 
@@ -829,8 +830,7 @@ const updateGoalsList = () => {
     `;
     return;
   }
-
-  container.innerHTML = appState.goals
+ container.innerHTML = appState.goals
     .map((goal) => {
       const percentage = Math.min(
         (goal.currentAmount / goal.targetAmount) * 100,
@@ -860,6 +860,7 @@ const updateGoalsList = () => {
     })
     .join("");
 };
+
 
 const openGoalModal = (goalId = null) => {
   const modal = document.getElementById("goal-modal");
@@ -896,6 +897,7 @@ const openGoalModal = (goalId = null) => {
 
   if (modal) modal.classList.add("active");
 };
+
 
 const closeGoalModal = () => {
   const modal = document.getElementById("goal-modal");
@@ -955,6 +957,7 @@ const deleteGoal = (goalId) => {
       showToast("Error", "No se pudo conectar con el servidor", "error");
     });
 };
+
 
 const openAddProgressModal = (goalId) => {
   const modal = document.getElementById("add-progress-modal");
@@ -1538,7 +1541,7 @@ const editServerReminder = (id) => {
 const deleteServerReminder = async (id) => {
   if (!confirm('¿Eliminar este recordatorio?')) return;
   try {
-  const target = 'index.php?action=eliminarRecordatorio';
+    const target = 'index.php?action=eliminarRecordatorio';
     const res = await fetch(target, {
       method: 'POST',
       credentials: 'same-origin',
@@ -1562,7 +1565,7 @@ const deleteServerReminder = async (id) => {
 
 const refreshRemindersFromServer = async () => {
   try {
-  const endpoint = 'index.php?action=getProximosRecordatorios';
+    const endpoint = 'index.php?action=getProximosRecordatorios';
     const res = await fetch(endpoint, { credentials: 'same-origin' });
     if (!res.ok) return;
     const arr = await res.json().catch(() => null);
@@ -1716,8 +1719,8 @@ const getIconClass = (icon) => {
 };
 
 
-function openAddMoneyModal() {  }
-function closeAddMoneyModal() {  }
+function openAddMoneyModal() { }
+function closeAddMoneyModal() { }
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1839,7 +1842,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
 
           let data = null;
-          try { data = await res.json(); } catch (_) {}
+          try { data = await res.json(); } catch (_) { }
 
           if (res.ok && data && data.success) {
             showToast("Transacción actualizada", "Se guardaron los cambios", "success");
@@ -1853,11 +1856,11 @@ document.addEventListener("DOMContentLoaded", () => {
               tr.querySelector("td:nth-child(5)").textContent =
                 Number(fd.get("monto") || 0).toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-              tr.dataset.idTipo      = fd.get("id_tipo");
+              tr.dataset.idTipo = fd.get("id_tipo");
               tr.dataset.idCategoria = fd.get("id_categoria");
               tr.dataset.descripcion = fd.get("descripcion");
-              tr.dataset.monto       = fd.get("monto");
-              tr.dataset.fecha       = fd.get("fecha");
+              tr.dataset.monto = fd.get("monto");
+              tr.dataset.fecha = fd.get("fecha");
             }
 
             closeTransactionModal();
