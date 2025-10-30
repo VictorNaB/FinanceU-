@@ -4,12 +4,14 @@ require_once 'controlador/ControladorUsuario.php';
 require_once 'controlador/ControladorTransaccion.php';
 require_once 'controlador/ControladorMetas.php';
 require_once 'controlador/ControladorPerfil.php';
+require_once 'controlador/ControladorRecordatorios.php';
 // Crear una instancia del controlador 
 
 $controlador = new ControladorEstudiante();
 $controladorTransaccion = new ControladorTransaccion();
 $controladorMetas = new ControladorMeta();
 $controladorPerfil = new ControladorPerfil();
+$ctrl = new ControladorRecordatorios();
 
 
 // Verificar si se ha especificado una acción en la URL 
@@ -78,6 +80,18 @@ if (isset($_GET['action'])) {
             break;
         case 'cambiarContrasena':
             $controlador->cambiarContrasena($_SESSION['id_usuario'], $_POST['nuevaContrasena']);
+            break;
+        case 'crear':
+            $ctrl->crear();
+            break;
+        case 'actualizar':
+            $ctrl->actualizar();
+            break;
+        case 'eliminar':
+            $ctrl->eliminar();
+            break;
+        case 'getProximos':
+            $ctrl->obtenerProximos();
             break;
         default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 

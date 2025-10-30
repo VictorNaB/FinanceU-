@@ -1,29 +1,4 @@
 <?php
-
-require_once __DIR__ . '/../controlador/ControladorRecordatorios.php';
-
-$ctrl = new ControladorRecordatorios();
-$action = $_GET['action'] ?? $_POST['action'] ?? null;
-
-if ($action === 'getProximos' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-	$ctrl->obtenerProximos();
-	exit;
-}
-
-if ($action === 'crear' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-	$ctrl->crear();
-	exit;
-}
-
-if ($action === 'eliminar' && ($_SERVER['REQUEST_METHOD'] === 'POST' || $_SERVER['REQUEST_METHOD'] === 'GET')) {
-	$ctrl->eliminar();
-	exit;
-}
-if ($action === 'actualizar' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-	$ctrl->actualizar();
-	exit;
-}
-
 if (session_status() === PHP_SESSION_NONE) session_start();
 $html = '<div class="reminders-list">';
 if (!isset($_SESSION['id_usuario'])) {
