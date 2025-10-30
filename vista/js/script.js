@@ -1538,7 +1538,7 @@ const editServerReminder = (id) => {
 const deleteServerReminder = async (id) => {
   if (!confirm('¿Eliminar este recordatorio?')) return;
   try {
-    const target = '/FinanceU-/vista/RecordatorioVista.php?action=eliminar';
+  const target = 'index.php?action=eliminarRecordatorio';
     const res = await fetch(target, {
       method: 'POST',
       credentials: 'same-origin',
@@ -1562,7 +1562,7 @@ const deleteServerReminder = async (id) => {
 
 const refreshRemindersFromServer = async () => {
   try {
-    const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=getProximos';
+  const endpoint = 'index.php?action=getProximosRecordatorios';
     const res = await fetch(endpoint, { credentials: 'same-origin' });
     if (!res.ok) return;
     const arr = await res.json().catch(() => null);
@@ -1900,6 +1900,15 @@ document.addEventListener("DOMContentLoaded", () => {
   ].forEach((id) => {
     const f = document.getElementById(id);
     if (!f) return;
+
+    // Si el formulario tiene atributo action (envío al servidor), dejamos que el navegador lo maneje
+    const hasAction = f.getAttribute('action');
+    if (hasAction) {
+      // Para el formulario de perfil, permitimos el envío normal al servidor (no prevenir)
+      return;
+    }
+
+    // Si no tiene action, manejamos el submit desde JS (SPA/local)
     f.addEventListener("submit", (e) => {
       e.preventDefault();
       const fd = new FormData(f);
@@ -1908,7 +1917,7 @@ document.addEventListener("DOMContentLoaded", () => {
           try {
             const isEditServer = !!appState.currentEditingServerId;
             const action = isEditServer ? 'actualizar' : 'crear';
-            const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=' + action;
+            const endpoint = 'index.php?action=' + (action === 'actualizar' ? 'actualizarRecordatorio' : 'crearRecordatorio');
 
             if (isEditServer) fd.append('id', appState.currentEditingServerId);
 

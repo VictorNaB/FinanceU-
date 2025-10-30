@@ -99,7 +99,6 @@ class ControladorTransaccion
             echo json_encode(['success' => false, 'message' => 'ID inválido']);
             exit;
         }
-
         try {
             $ok = $this->modelo->eliminarTransaccion($id);
 

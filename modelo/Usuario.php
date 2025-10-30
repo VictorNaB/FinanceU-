@@ -4,6 +4,7 @@ require_once 'modelo/Conexion.php';
 class Usuario
 {
     private $conexion;
+    private $lastError = null;
 
     public function __construct()
     {
@@ -42,6 +43,7 @@ class Usuario
 
     public function verificarCredenciales($correo, $contrasena)
     {
+
         $stmt = $this->conexion->prepare("SELECT contrasena FROM accesos WHERE correo= ?");
         $stmt->bind_param("s", $correo);
         $stmt->execute();
@@ -62,8 +64,7 @@ class Usuario
 
     public function obtenerInformacionUsuario($correo)
     {
-        $stmt = $this->conexion->prepare("
-        SELECT 
+        $stmt = $this->conexion->prepare("SELECT 
             u.id_usuario,
             u.nombre,
             u.apellido,
@@ -84,4 +85,174 @@ class Usuario
         $resultado = $stmt->get_result();
         return $resultado->fetch_assoc();
     }
+
+    /**
+     * Busca una universidad por nombre y la crea si no existe.
+     * Devuelve el id_universidad (int) o null si hubo un error.
+     */
+    public function getOrCreateUniversidad(string $nombre)
+    {
+        try {
+            $nombre = trim($nombre);
+            if ($nombre === '') {
+                return null;
+            }
+
+            $stmt = $this->conexion->prepare("SELECT id_universidad FROM universidad WHERE nombre = ? LIMIT 1");
+            if (!$stmt) {
+                throw new Exception('Error en prepare getOrCreateUniversidad: ' . $this->conexion->error);
+            }
+            $stmt->bind_param('s', $nombre);
+            if (!$stmt->execute()) {
+                throw new Exception('Error ejecutando select universidad: ' . $stmt->error);
+            }
+            $resultado = $stmt->get_result();
+            $fila = $resultado->fetch_assoc();
+            if ($fila && isset($fila['id_universidad'])) {
+                return (int)$fila['id_universidad'];
+            }
+
+            // No existe: insertar
+            $stmt = $this->conexion->prepare("INSERT INTO universidad (nombre) VALUES (?)");
+            if (!$stmt) {
+                throw new Exception('Error en prepare insert universidad: ' . $this->conexion->error);
+            }
+            $stmt->bind_param('s', $nombre);
+            if (!$stmt->execute()) {
+                throw new Exception('Error insertando universidad: ' . $stmt->error);
+            }
+            return $this->conexion->insert_id;
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    
+    public function actualizar($id_usuario, $nombre, $apellido, $correo, $id_universidad, $programa) {
+        $result = [
+            'success' => false,
+            'affectedUsuarios' => 0,
+            'affectedAccesos' => 0,
+            'error' => null
+        ];
+
+        try {
+            // Iniciar transacción
+            $this->conexion->begin_transaction();
+
+            // 1. Actualizar la tabla usuarios
+            $stmt = $this->conexion->prepare("UPDATE usuarios SET 
+                nombre = ?, 
+                apellido = ?, 
+                id_universidad = ?, 
+                programa_estudio = ? 
+                WHERE id_usuario = ?");
+
+            if (!$stmt) {
+                throw new Exception("Error preparando la actualización de usuarios: " . $this->conexion->error);
+            }
+
+            // Validar que el ID de usuario sea un número
+            $id_usuario = (int)$id_usuario;
+            if ($id_usuario <= 0) {
+                throw new Exception("ID de usuario inválido");
+            }
+
+            $stmt->bind_param("ssisi", $nombre, $apellido, $id_universidad, $programa, $id_usuario);
+
+            if (!$stmt->execute()) {
+                throw new Exception("Error actualizando usuarios: " . $stmt->error);
+            }
+
+            // Registrar cuántas filas fueron afectadas por la actualización de usuarios
+            $result['affectedUsuarios'] = (int)$this->conexion->affected_rows;
+
+            // 2. Actualizar el correo en la tabla accesos si se proporcionó uno
+            if (!empty($correo)) {
+                $stmt = $this->conexion->prepare("UPDATE accesos SET correo = ? WHERE id_usuario = ?");
+
+                if (!$stmt) {
+                    throw new Exception("Error preparando la actualización de accesos: " . $this->conexion->error);
+                }
+
+                $stmt->bind_param("si", $correo, $id_usuario);
+
+                if (!$stmt->execute()) {
+                    throw new Exception("Error actualizando accesos: " . $stmt->error);
+                }
+                $result['affectedAccesos'] = (int)$this->conexion->affected_rows;
+            }
+
+            // Si todo salió bien, confirmar los cambios
+            $this->conexion->commit();
+            $result['success'] = true;
+            return $result;
+
+        } catch (Exception $e) {
+            // Si algo salió mal, deshacer los cambios
+            $this->conexion->rollback();
+            
+            $result['error'] = $e->getMessage();
+            return $result;
+        }
+    }
+
+    public function eliminarUsuario($id_usuario) {
+        try {
+            $id_usuario = (int)$id_usuario;
+            if ($id_usuario <= 0) {
+                throw new Exception('ID de usuario inválido');
+            }
+
+            // Iniciar transacción para borrar accesos y usuario de forma atómica
+            $this->conexion->begin_transaction();
+
+            $stmt = $this->conexion->prepare("DELETE FROM accesos WHERE id_usuario = ?");
+            if (!$stmt) throw new Exception('Error en prepare accesos: ' . $this->conexion->error);
+            $stmt->bind_param("i", $id_usuario);
+            if (!$stmt->execute()) throw new Exception('Error eliminando accesos: ' . $stmt->error);
+
+            $stmt = $this->conexion->prepare("DELETE FROM usuarios WHERE id_usuario = ?");
+            if (!$stmt) throw new Exception('Error en prepare usuarios: ' . $this->conexion->error);
+            $stmt->bind_param("i", $id_usuario);
+            if (!$stmt->execute()) throw new Exception('Error eliminando usuario: ' . $stmt->error);
+
+            $this->conexion->commit();
+            return true;
+        } catch (Exception $e) {
+            // En caso de error deshacemos la transacción y devolvemos false
+            if ($this->conexion->errno) {
+                $this->conexion->rollback();
+            }
+            $this->lastError = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function actualizarContrasena($id_usuario, $nueva_contrasena) {
+        try {
+            $id_usuario = (int)$id_usuario;
+            if ($id_usuario <= 0) {
+                throw new Exception('ID de usuario inválido');
+            }
+
+            $contrasena_hashed = password_hash($nueva_contrasena, PASSWORD_DEFAULT);
+
+            $stmt = $this->conexion->prepare("UPDATE accesos SET contrasena = ? WHERE id_usuario = ?");
+            if (!$stmt) throw new Exception('Error en prepare cambiarContrasena: ' . $this->conexion->error);
+            $stmt->bind_param("si", $contrasena_hashed, $id_usuario);
+            if (!$stmt->execute()) throw new Exception('Error cambiando contraseña: ' . $stmt->error);
+
+            return true;
+        } catch (Exception $e) {
+            $this->lastError = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function getLastError()
+    {
+        return $this->lastError;
+    }
+
 }

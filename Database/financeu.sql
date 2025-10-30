@@ -145,3 +145,17 @@ CREATE TABLE AnalisisSemanal (
     ON DELETE CASCADE
     ON UPDATE CASCADE
 ) ENGINE=InnoDB;
+
+INSERT INTO roles(nombre) VALUES ('Admin');
+INSERT INTO roles(nombre) VALUES ('Usuario');
+
+INSERT INTO tipostransaccion(nombre) VALUES ('Ingresos');
+INSERT INTO tipostransaccion(nombre) VALUES ('Gastos');
+
+INSERT into CategoriaTransaccion(nombre) VALUES ('Alimentacion');
+INSERT into CategoriaTransaccion(nombre) VALUES ('Transporte');
+INSERT into CategoriaTransaccion(nombre) VALUES ('Educación');
+INSERT into CategoriaTransaccion(nombre) VALUES ('Entretenimiento');
+INSERT into CategoriaTransaccion(nombre) VALUES ('Salud');
+INSERT into CategoriaTransaccion(nombre) VALUES ('Compras');
+INSERT into CategoriaTransaccion(nombre) VALUES ('Otros');

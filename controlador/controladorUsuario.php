@@ -23,7 +23,9 @@ class ControladorEstudiante
     public function iniciarSesion($correo, $contrasena)
     {
         if ($this->modelo->verificarCredenciales($correo, $contrasena)) {
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
 
             // Obtener toda la información del usuario
             $infoUsuario = $this->modelo->obtenerInformacionUsuario($correo);
@@ -43,7 +45,9 @@ class ControladorEstudiante
     }
     public function cerrarSesion()
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         session_unset();
         session_destroy();
         // Redirige al login o index
@@ -61,7 +65,7 @@ class ControladorEstudiante
     public function registrar($nombre, $apellido, $correo, $contrasena, $universidad, $idRol, $programa)
     {
         if ($this->modelo->registrar($nombre, $apellido, $correo, $contrasena, $universidad, $idRol, $programa)) {
-            require 'vista/index.php';
+            require 'vista/login.php';
         } else {
             echo "Error al registrar.";
         }
@@ -69,7 +73,9 @@ class ControladorEstudiante
 
     public function mostrarPerfil()
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
         if (!isset($_SESSION['correo'])) {
             header('Location: login.php');
@@ -81,4 +87,29 @@ class ControladorEstudiante
 
         include 'vista/perfil.php'; // tu vista de perfil
     }
+
+    public function cambiarContrasena($id_usuario, $nuevaContrasena)
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['id_usuario'])) {
+            header('Location: index.php?action=mostrarLogin');
+            exit();
+        }
+
+        if ($this->modelo->actualizarContrasena($id_usuario, $nuevaContrasena)) {
+            $_SESSION['mensaje'] = "Contraseña actualizada correctamente.";
+            header('Location: index.php?action=mostrarPerfil');
+        } else {
+            $_SESSION['error'] = "Error al actualizar la contraseña: " . $this->modelo->getLastError();
+            header('Location: index.php?action=mostrarPerfil');
+        }
+        exit();
+    }
+
+
+
+        
 }
