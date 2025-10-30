@@ -144,5 +144,55 @@ class ControladorPerfil {
             exit;
         }
     }
+
+    public function EliminarCuenta() {
+        // Solo permitir POST para eliminar (evita borrados por GET)
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: index.php?action=app&page=perfil');
+            exit;
+        }
+
+        // Verificar si el usuario está autenticado
+        if (!isset($_SESSION['id_usuario'])) {
+            header('Location: index.php?action=mostrarLogin');
+            exit;
+        }
+
+        $id_usuario = (int)$_SESSION['id_usuario'];
+
+        try {
+            $deleted = $this->modelo->eliminarUsuario($id_usuario);
+
+            if ($deleted) {
+                // Cerrar sesión después de eliminar la cuenta
+                session_unset();
+                session_destroy();
+
+                // Redirigir al inicio con mensaje de cuenta eliminada
+                header('Location: index.php?action=mostrar&mensaje=cuenta_eliminada');
+                exit;
+            } else {
+                // Si se solicitó debug, devolver detalle del error
+                $debug = (isset($_REQUEST['debug']) && $_REQUEST['debug'] == '1');
+                if ($debug) {
+                    header('Content-Type: application/json; charset=utf-8');
+                    echo json_encode([
+                        'success' => false,
+                        'error' => $this->modelo->getLastError(),
+                    ]);
+                    exit;
+                }
+
+                // Error al eliminar la cuenta (sin debug)
+                header('Location: index.php?action=app&page=perfil&mensaje=error_eliminar');
+                exit;
+            }
+        } catch (Exception $e) {
+            header('Location: index.php?action=app&page=perfil&mensaje=error_db');
+            exit;
+        }
+    }
+        
+
 }
 ?>

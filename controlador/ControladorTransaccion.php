@@ -58,7 +58,6 @@ class ControladorTransaccion
             echo "ID inválido";
             exit;
         }
-
         try {
             $ok = $this->modelo->eliminarTransaccion($id);
 

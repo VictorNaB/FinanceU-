@@ -1448,7 +1448,7 @@ const editServerReminder = (id) => {
 const deleteServerReminder = async (id) => {
   if (!confirm('¿Eliminar este recordatorio?')) return;
   try {
-    const target = '/FinanceU-/vista/RecordatorioVista.php?action=eliminar';
+  const target = 'index.php?action=eliminarRecordatorio';
     const res = await fetch(target, {
       method: 'POST',
       credentials: 'same-origin',
@@ -1472,7 +1472,7 @@ const deleteServerReminder = async (id) => {
 
 const refreshRemindersFromServer = async () => {
   try {
-    const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=getProximos';
+  const endpoint = 'index.php?action=getProximosRecordatorios';
     const res = await fetch(endpoint, { credentials: 'same-origin' });
     if (!res.ok) return;
     const arr = await res.json().catch(() => null);
@@ -1773,7 +1773,7 @@ document.addEventListener("DOMContentLoaded", () => {
           try {
             const isEditServer = !!appState.currentEditingServerId;
             const action = isEditServer ? 'actualizar' : 'crear';
-            const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=' + action;
+            const endpoint = 'index.php?action=' + (action === 'actualizar' ? 'actualizarRecordatorio' : 'crearRecordatorio');
 
             if (isEditServer) fd.append('id', appState.currentEditingServerId);
 

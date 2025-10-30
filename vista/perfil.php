@@ -10,6 +10,24 @@ if (session_status() === PHP_SESSION_NONE) {
         <h1>Perfil de Usuario</h1>
         <p>Gestiona tu información personal</p>
     </div>
+    
+    <?php if (isset($_SESSION['mensaje'])): ?>
+        <div class="alert alert-success">
+            <?php 
+                echo htmlspecialchars($_SESSION['mensaje']); 
+                unset($_SESSION['mensaje']);
+            ?>
+        </div>
+    <?php endif; ?>
+    
+    <?php if (isset($_SESSION['error'])): ?>
+        <div class="alert alert-danger">
+            <?php 
+                echo htmlspecialchars($_SESSION['error']); 
+                unset($_SESSION['error']);
+            ?>
+        </div>
+    <?php endif; ?>
 
     <div class="profile-grid">
         <div class="profile-card">
@@ -114,17 +132,43 @@ if (session_status() === PHP_SESSION_NONE) {
             </div>
         </div>
 
-        <div>
-            <button type="button" class="btn-secondary" id="change-password-btn">
-                    <i class="fas fa-key"></i>
+        <div class="profile-actions">
+            <form method="POST" action="index.php?action=cambiarContrasena" onsubmit="return validarContrasenas();">
+                <div class="form-group-password">
+                    <div class="password-inputs">
+                        <input type="password" class="form-group-input" name="nuevaContrasena" id="nuevaContrasena" placeholder="Nueva contraseña" required>
+                        <input type="password" class="form-group-input" name="confirmarContrasena" id="confirmarContrasena" placeholder="Confirmar contraseña" required>
+                    </div>
+                    <button type="submit" class="btn-secondary" id="change-password-btn">
+                        <i class="fas fa-key"></i>
                         Cambiar Contraseña
-            </button>
+                    </button>
+                </div>
+            </form>
+            
+            <script>
+            function validarContrasenas() {
+                var nueva = document.getElementById('nuevaContrasena').value;
+                var confirmacion = document.getElementById('confirmarContrasena').value;
+                
+                if (nueva !== confirmacion) {
+                    alert('Las contraseñas no coinciden');
+                    return false;
+                }
+                if (nueva.length < 6) {
+                    alert('La contraseña debe tener al menos 6 caracteres');
+                    return false;
+                }
+                return true;
+            }
+            </script>
             <br>
-            <br>
-            <button type="button" class="btn-danger" id="delete-account-btn">
-                        <i class="fas fa-user-slash"></i>
-                        Eliminar Cuenta
-            </button>
-    </div>
+            <form method="post" action="index.php?action=eliminarCuenta" onsubmit="return confirm('¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.');">
+                <button type="submit" class="btn-danger" id="delete-account-btn">
+                    <i class="fas fa-user-slash"></i>
+                    Eliminar Cuenta
+                </button>
+            </form>
+        </div>
     </div>
 </section>

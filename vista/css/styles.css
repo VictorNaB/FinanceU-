@@ -233,6 +233,27 @@ input, select, textarea {
   gap: 1rem;
 }
 
+.form-group-input{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--input-background);
+  color: var(--foreground); 
+  gap: 1rem;
+  margin-top: 3%;
+}
+.form-group-password{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  margin: 1%;
+
+}
+
 /* Page Management */
 .page {
   display: none;
@@ -1242,6 +1263,7 @@ input, select, textarea {
   align-items: center;
   justify-content: center;
   background: rgba(0,0,0,.45);
+  -webkit-backdrop-filter: blur(3px); /* Safari 9+ */
   backdrop-filter: blur(3px);
   z-index: 1000;
 }

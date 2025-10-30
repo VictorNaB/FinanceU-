@@ -4,6 +4,7 @@ require_once 'modelo/Conexion.php';
 class Usuario
 {
     private $conexion;
+    private $lastError = null;
 
     public function __construct()
     {
@@ -194,6 +195,64 @@ class Usuario
             $result['error'] = $e->getMessage();
             return $result;
         }
+    }
+
+    public function eliminarUsuario($id_usuario) {
+        try {
+            $id_usuario = (int)$id_usuario;
+            if ($id_usuario <= 0) {
+                throw new Exception('ID de usuario inválido');
+            }
+
+            // Iniciar transacción para borrar accesos y usuario de forma atómica
+            $this->conexion->begin_transaction();
+
+            $stmt = $this->conexion->prepare("DELETE FROM accesos WHERE id_usuario = ?");
+            if (!$stmt) throw new Exception('Error en prepare accesos: ' . $this->conexion->error);
+            $stmt->bind_param("i", $id_usuario);
+            if (!$stmt->execute()) throw new Exception('Error eliminando accesos: ' . $stmt->error);
+
+            $stmt = $this->conexion->prepare("DELETE FROM usuarios WHERE id_usuario = ?");
+            if (!$stmt) throw new Exception('Error en prepare usuarios: ' . $this->conexion->error);
+            $stmt->bind_param("i", $id_usuario);
+            if (!$stmt->execute()) throw new Exception('Error eliminando usuario: ' . $stmt->error);
+
+            $this->conexion->commit();
+            return true;
+        } catch (Exception $e) {
+            // En caso de error deshacemos la transacción y devolvemos false
+            if ($this->conexion->errno) {
+                $this->conexion->rollback();
+            }
+            $this->lastError = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function actualizarContrasena($id_usuario, $nueva_contrasena) {
+        try {
+            $id_usuario = (int)$id_usuario;
+            if ($id_usuario <= 0) {
+                throw new Exception('ID de usuario inválido');
+            }
+
+            $contrasena_hashed = password_hash($nueva_contrasena, PASSWORD_DEFAULT);
+
+            $stmt = $this->conexion->prepare("UPDATE accesos SET contrasena = ? WHERE id_usuario = ?");
+            if (!$stmt) throw new Exception('Error en prepare cambiarContrasena: ' . $this->conexion->error);
+            $stmt->bind_param("si", $contrasena_hashed, $id_usuario);
+            if (!$stmt->execute()) throw new Exception('Error cambiando contraseña: ' . $stmt->error);
+
+            return true;
+        } catch (Exception $e) {
+            $this->lastError = $e->getMessage();
+            return false;
+        }
+    }
+
+    public function getLastError()
+    {
+        return $this->lastError;
     }
 
 }

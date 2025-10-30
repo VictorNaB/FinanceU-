@@ -65,7 +65,7 @@ class ControladorEstudiante
     public function registrar($nombre, $apellido, $correo, $contrasena, $universidad, $idRol, $programa)
     {
         if ($this->modelo->registrar($nombre, $apellido, $correo, $contrasena, $universidad, $idRol, $programa)) {
-            require 'vista/index.php';
+            require 'vista/login.php';
         } else {
             echo "Error al registrar.";
         }
@@ -87,6 +87,29 @@ class ControladorEstudiante
 
         include 'vista/perfil.php'; // tu vista de perfil
     }
+
+    public function cambiarContrasena($id_usuario, $nuevaContrasena)
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['id_usuario'])) {
+            header('Location: index.php?action=mostrarLogin');
+            exit();
+        }
+
+        if ($this->modelo->actualizarContrasena($id_usuario, $nuevaContrasena)) {
+            $_SESSION['mensaje'] = "Contraseña actualizada correctamente.";
+            header('Location: index.php?action=mostrarPerfil');
+        } else {
+            $_SESSION['error'] = "Error al actualizar la contraseña: " . $this->modelo->getLastError();
+            header('Location: index.php?action=mostrarPerfil');
+        }
+        exit();
+    }
+
+
 
         
 }

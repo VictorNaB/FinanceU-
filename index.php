@@ -51,7 +51,7 @@ if (isset($_GET['action'])) {
             // Llamar al método que maneja el cierre de sesión 
             $controlador->cerrarSesion();
             break;
-            case 'mostrarPerfil':
+        case 'mostrarPerfil':
                 // Mostrar la vista de perfil
                 $controladorPerfil->mostrarPerfil();
                 break;
@@ -69,6 +69,12 @@ if (isset($_GET['action'])) {
             break;
         case 'actualizarPerfil':
             $controladorPerfil->actualizarPerfil();
+            break;
+        case 'eliminarCuenta':
+            $controladorPerfil->eliminarCuenta();
+            break;
+        case 'cambiarContrasena':
+            $controlador->cambiarContrasena($_SESSION['id_usuario'], $_POST['nuevaContrasena']);
             break;
         default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 
