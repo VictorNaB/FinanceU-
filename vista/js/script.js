@@ -1480,6 +1480,7 @@ const updateRemindersList = () => {
     .join("");
 };
 
+
 const previousMonth = () => {
   appState.currentMonth--;
   if (appState.currentMonth < 0) {
@@ -1554,6 +1555,7 @@ const deleteReminder = (reminderId) => {
 
 
 
+
 const saveReminder = (formData) => {
   const reminderData = {
     title: formData.title,
@@ -1606,10 +1608,11 @@ const editServerReminder = (id) => {
   if (titleEl) titleEl.textContent = 'Editar Recordatorio';
 };
 
+
 const deleteServerReminder = async (id) => {
   if (!confirm('¿Eliminar este recordatorio?')) return;
   try {
-    const target = 'index.php?action=eliminarRecordatorio';
+    const target = '/FinanceU-/vista/RecordatorioVista.php?action=eliminar';
     const res = await fetch(target, {
       method: 'POST',
       credentials: 'same-origin',
@@ -1631,9 +1634,10 @@ const deleteServerReminder = async (id) => {
   }
 };
 
+
 const refreshRemindersFromServer = async () => {
   try {
-    const endpoint = 'index.php?action=getProximosRecordatorios';
+    const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=getProximos';
     const res = await fetch(endpoint, { credentials: 'same-origin' });
     if (!res.ok) return;
     const arr = await res.json().catch(() => null);
@@ -1984,15 +1988,6 @@ document.addEventListener("DOMContentLoaded", () => {
   ].forEach((id) => {
     const f = document.getElementById(id);
     if (!f) return;
-
-    // Si el formulario tiene atributo action (envío al servidor), dejamos que el navegador lo maneje
-    const hasAction = f.getAttribute('action');
-    if (hasAction) {
-      // Para el formulario de perfil, permitimos el envío normal al servidor (no prevenir)
-      return;
-    }
-
-    // Si no tiene action, manejamos el submit desde JS (SPA/local)
     f.addEventListener("submit", (e) => {
       e.preventDefault();
       const fd = new FormData(f);
@@ -2001,7 +1996,7 @@ document.addEventListener("DOMContentLoaded", () => {
           try {
             const isEditServer = !!appState.currentEditingServerId;
             const action = isEditServer ? 'actualizar' : 'crear';
-            const endpoint = 'index.php?action=' + (action === 'actualizar' ? 'actualizarRecordatorio' : 'crearRecordatorio');
+            const endpoint = '/FinanceU-/vista/RecordatorioVista.php?action=' + action;
 
             if (isEditServer) fd.append('id', appState.currentEditingServerId);
 
