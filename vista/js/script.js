@@ -1756,6 +1756,15 @@ document.addEventListener("DOMContentLoaded", () => {
   ].forEach((id) => {
     const f = document.getElementById(id);
     if (!f) return;
+
+    // Si el formulario tiene atributo action (envío al servidor), dejamos que el navegador lo maneje
+    const hasAction = f.getAttribute('action');
+    if (hasAction) {
+      // Para el formulario de perfil, permitimos el envío normal al servidor (no prevenir)
+      return;
+    }
+
+    // Si no tiene action, manejamos el submit desde JS (SPA/local)
     f.addEventListener("submit", (e) => {
       e.preventDefault();
       const fd = new FormData(f);

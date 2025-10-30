@@ -3,11 +3,13 @@
 require_once 'controlador/ControladorUsuario.php';
 require_once 'controlador/ControladorTransaccion.php';
 require_once 'controlador/ControladorMetas.php';
+require_once 'controlador/ControladorPerfil.php';
 // Crear una instancia del controlador 
 
 $controlador = new ControladorEstudiante();
 $controladorTransaccion = new ControladorTransaccion();
 $controladorMetas = new ControladorMeta();
+$controladorPerfil = new ControladorPerfil();
 
 
 // Verificar si se ha especificado una acción en la URL 
@@ -49,6 +51,10 @@ if (isset($_GET['action'])) {
             // Llamar al método que maneja el cierre de sesión 
             $controlador->cerrarSesion();
             break;
+            case 'mostrarPerfil':
+                // Mostrar la vista de perfil
+                $controladorPerfil->mostrarPerfil();
+                break;
         case 'crearMeta':
             $controladorMetas->crear();
             break;
@@ -60,6 +66,9 @@ if (isset($_GET['action'])) {
             break;
         case 'eliminarMeta':
             $controladorMetas->eliminar();
+            break;
+        case 'actualizarPerfil':
+            $controladorPerfil->actualizarPerfil();
             break;
         default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 

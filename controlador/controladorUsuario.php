@@ -23,7 +23,9 @@ class ControladorEstudiante
     public function iniciarSesion($correo, $contrasena)
     {
         if ($this->modelo->verificarCredenciales($correo, $contrasena)) {
-            session_start();
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
 
             // Obtener toda la información del usuario
             $infoUsuario = $this->modelo->obtenerInformacionUsuario($correo);
@@ -43,7 +45,9 @@ class ControladorEstudiante
     }
     public function cerrarSesion()
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         session_unset();
         session_destroy();
         // Redirige al login o index
@@ -69,7 +73,9 @@ class ControladorEstudiante
 
     public function mostrarPerfil()
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
         if (!isset($_SESSION['correo'])) {
             header('Location: login.php');
@@ -81,4 +87,6 @@ class ControladorEstudiante
 
         include 'vista/perfil.php'; // tu vista de perfil
     }
+
+        
 }
