@@ -97,7 +97,7 @@
                 </button>
               </td>
             </tr>
-          <?php endwhile; ?> ?> <?php else: ?> <tr>
+          <?php endwhile; ?>  <?php else: ?> <tr>
             <td colspan="6" class="text-center">No se encontraron transacciones</td>
           </tr> <?php endif; ?>
       </tbody>
