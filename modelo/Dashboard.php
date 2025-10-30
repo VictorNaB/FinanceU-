@@ -58,10 +58,10 @@ class Dashboard {
 
   public function getTransaccionesRecientes(int $uid, int $limit=5) {
     $sql = "SELECT idtipo_transaccion, descripcion, monto, idCategoriaTransaccion, fecha
-            FROM Transaccion
-            WHERE id_usuario=?
-            ORDER BY fecha DESC, idTransaccion DESC
-            LIMIT ?";
+      FROM Transaccion
+      WHERE id_usuario=?
+      ORDER BY fecha DESC, id_transaccion DESC
+      LIMIT ?";
     $st = $this->cn->prepare($sql);
     if (!$st) throw new Exception('prepare recent: '.$this->cn->error);
     $st->bind_param('ii', $uid, $limit);

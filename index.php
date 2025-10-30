@@ -49,6 +49,9 @@ if (isset($_GET['action'])) {
         case 'eliminarTransaccion':
             $controladorTransaccion->eliminar();
             break;
+        case 'getTransacciones':
+            $controladorTransaccion->listarJson();
+            break;
         case 'actualizarTransaccion':
             $controladorTransaccion->actualizar();
             break; 

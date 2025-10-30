@@ -116,4 +116,31 @@ class ControladorTransaccion
             echo json_encode(['success' => false, 'message' => 'Error al eliminar: ' . $e->getMessage()]);
         }
     }
+
+    // Devuelve todas las transacciones del usuario en JSON (para uso AJAX en el dashboard)
+    public function listarJson()
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (!isset($_SESSION['id_usuario'])) {
+            http_response_code(403);
+            echo json_encode([]);
+            exit;
+        }
+
+        $idUsuario = (int)$_SESSION['id_usuario'];
+        try {
+            $res = $this->modelo->obtenerTransacciones($idUsuario);
+            $out = [];
+            while ($row = $res->fetch_assoc()) {
+                $out[] = $row;
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode($out);
+            exit;
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+            exit;
+        }
+    }
 }

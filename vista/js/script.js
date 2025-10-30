@@ -405,7 +405,31 @@ const updateTrendChart = () => {
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const monthsData = [];
+  const ensureTransactionsLoaded = async () => {
+    if (appState.transactions && appState.transactions.length) return;
+    try {
+      const res = await fetch('index.php?action=getTransacciones', { credentials: 'same-origin' });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      if (!Array.isArray(data)) return;
+      appState.transactions = data.map(r => ({
+        id: String(r.id_transaccion || r.id || ''),
+        description: r.descripcion || r.description || '',
+        amount: Number(r.monto || r.amount || 0),
+        category: String(r.idCategoriaTransaccion || r.id_categoria || r.category || ''),
+        type: (Number(r.idtipo_transaccion || r.id_tipo || r.type) === 1) ? 'income' : 'expense',
+        date: r.fecha || r.date || ''
+      }));
+    } catch (err) {
+      console.error('No se pudieron cargar transacciones para el gráfico de tendencia:', err);
+    }
+  };
+
+  // Si no hay transacciones en memoria, intentar traerlas del servidor antes de dibujar
+  const draw = async () => {
+    await ensureTransactionsLoaded();
+
+    const monthsData = [];
   const currentDate = new Date();
   for (let i = 5; i >= 0; i--) {
     const date = new Date(
@@ -462,6 +486,10 @@ const updateTrendChart = () => {
       plugins: { legend: { position: "bottom" } },
     },
   });
+  };
+
+  // Ejecutar dibujo (maneja carga asíncrona si hace falta)
+  draw();
 };
 
 // Transaction Functions
