@@ -333,8 +333,8 @@ const updateRecentTransactions = () => {
       <div>
         <div style="font-weight:var(--font-weight-medium);">${t.description}</div>
         <div style="font-size:.875rem;color:var(--muted-foreground);">${formatDate(
-          t.date
-        )} • ${getCategoryName(t.category)}</div>
+        t.date
+      )} • ${getCategoryName(t.category)}</div>
       </div>
       <div class="transaction-amount ${t.type}" style="font-weight:var(--font-weight-medium);">
         ${t.type === "income" ? "+" : "-"}${formatCurrency(t.amount)}
@@ -494,19 +494,38 @@ const updateTransactionsList = () => {
     .join("");
 };
 
+/* =========================
+   HELPERS PARA EL HIDDEN ID
+   ========================= */
+const ensureHiddenIdInForm = (id) => {
+  const form = document.getElementById("transaction-form");
+  if (!form) return;
+  let hid = form.querySelector('input[name="id_transaccion"]');
+  if (!hid) {
+    hid = document.createElement('input');
+    hid.type = 'hidden';
+    hid.name = 'id_transaccion';
+    hid.id   = 'transaction-id';
+    form.appendChild(hid);
+  }
+  hid.value = String(id);
+};
+
+const removeHiddenIdFromForm = () => {
+  const form = document.getElementById("transaction-form");
+  if (!form) return;
+  const hid = form.querySelector('input[name="id_transaccion"]');
+  if (hid) hid.remove(); // quita el input cuando creas una nueva
+};
+
+
+
 const openTransactionModal = (transactionId = null) => {
   const modal = document.getElementById("transaction-modal");
-  const form = document.getElementById("transaction-form");
+  const form  = document.getElementById("transaction-form");
   const title = document.getElementById("transaction-modal-title");
 
-  // Si no hay modal (form inline), al menos setea fecha y enfoca
-  if (!form) {
-    const date = document.getElementById("transaction-date");
-    if (date) date.value = new Date().toISOString().split("T")[0];
-    const desc = document.getElementById("transaction-description");
-    if (desc) desc.focus();
-    return;
-  }
+  if (!form) return;
 
   form.reset();
   appState.currentEditingId = transactionId;
@@ -515,27 +534,31 @@ const openTransactionModal = (transactionId = null) => {
     const t = appState.transactions.find((x) => x.id === transactionId);
     if (t) {
       if (title) title.textContent = "Editar Transacción";
-      const typeSel = document.getElementById("transaction-type");
-      if (typeSel) typeSel.value = t.type === "income" ? "1" : "2";
+      document.getElementById("transaction-type").value      = (t.type === "income" ? "1" : "2");
       document.getElementById("transaction-description").value = t.description;
-      document.getElementById("transaction-amount").value = t.amount;
-      document.getElementById("transaction-category").value = t.category;
-      document.getElementById("transaction-date").value = t.date;
+      document.getElementById("transaction-amount").value    = t.amount;
+      document.getElementById("transaction-category").value  = t.category;
+      document.getElementById("transaction-date").value      = t.date;
+      ensureHiddenIdInForm(String(transactionId));
+      form.setAttribute("action","index.php?action=actualizarTransaccion");
     }
   } else {
     if (title) title.textContent = "Nueva Transacción";
-    const date = document.getElementById("transaction-date");
-    if (date) date.value = new Date().toISOString().split("T")[0];
+    document.getElementById("transaction-date").value = new Date().toISOString().split("T")[0];
+    removeHiddenIdFromForm();
+    form.setAttribute("action","index.php?action=crearTransaccion");
   }
 
   if (modal) modal.classList.add("active");
 };
+
 
 const closeTransactionModal = () => {
   const modal = document.getElementById("transaction-modal");
   if (modal) modal.classList.remove("active");
   appState.currentEditingId = null;
 };
+
 
 const saveTransaction = (formData) => {
   const transactionData = {
@@ -571,40 +594,102 @@ const saveTransaction = (formData) => {
 
 const editTransaction = (transactionId) => openTransactionModal(transactionId);
 
-const deleteTransaction = (transactionId) => {
+// --- ACCIÓN ELIMINAR (optimista y rápida)
+const deleteTransaction = async (transactionId) => {
+  const isProbablyServerId = /^\d+$/.test(String(transactionId));
+  if (isProbablyServerId) {
+    await deleteServerTransaction(transactionId);
+    return;
+  }
+
+  // Local (optimista)
   if (!confirm("¿Estás seguro de que quieres eliminar esta transacción?")) return;
 
-  // Intentamos eliminar en el backend (si existe la sesión). Si falla, hacemos fallback a la eliminación local
-  fetch(`index.php?action=eliminarTransaccion&id=${encodeURIComponent(transactionId)}`, {
-    method: 'GET',
-    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-  })
-    .then(resp => resp.json())
-    .then(data => {
-      if (data && data.success) {
-        appState.transactions = appState.transactions.filter((t) => t.id !== transactionId);
-        updateTransactionsList();
-        updateDashboard();
-        saveToStorage();
-        showToast("Transacción eliminada", "La transacción ha sido eliminada correctamente", "info");
-      } else {
-        // Fallback local
-        appState.transactions = appState.transactions.filter((t) => t.id !== transactionId);
-        updateTransactionsList();
-        updateDashboard();
-        saveToStorage();
-        showToast("Transacción eliminada (local)", "No fue posible borrar en el servidor, se eliminó localmente", "warning");
-      }
-    })
-    .catch(() => {
-      // Fallback local si hay error de red
-      appState.transactions = appState.transactions.filter((t) => t.id !== transactionId);
-      updateTransactionsList();
-      updateDashboard();
-      saveToStorage();
-      showToast("Transacción eliminada (local)", "No fue posible conectar con el servidor, se eliminó localmente", "warning");
-    });
+  appState.transactions = appState.transactions.filter(t => t.id !== transactionId);
+  updateTransactionsList();
+  updateDashboard();
+  saveToStorage();
+  showToast("Transacción eliminada", "La transacción se eliminó (local)", "info");
 };
+
+// --- Server-side: eliminar transacción (POST + JSON, sin "listar") ---
+const deleteServerTransaction = async (idTransaccion) => {
+  if (!confirm('¿Eliminar esta transacción?')) return;
+
+  // 1) Optimistic UI: quitar la fila y restaurar si falla
+  const row = document.querySelector(`tr[data-id-transaccion="${idTransaccion}"]`);
+  const rowBackup = row ? row.outerHTML : null;
+  if (row) row.remove();
+
+  try {
+    // Usa el router que SÍ existe en tu index.php
+    const url = `index.php?action=eliminarTransaccion`;
+    const res = await fetch(url, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({ id: idTransaccion })
+    });
+
+    // Algunos servidores devuelven HTML si algo sale mal: intenta parsear JSON, si no, trata como fallo
+    let data = null;
+    try { data = await res.json(); } catch (_) { }
+
+    if (res.ok && data && data.success) {
+      showToast('Transacción eliminada', 'Se eliminó correctamente en la base de datos', 'success');
+
+      // Limpia estado local si la tuvieses cargada ahí
+      const before = appState.transactions.length;
+      appState.transactions = appState.transactions.filter(t => String(t.id) !== String(idTransaccion));
+      if (appState.transactions.length !== before) {
+        updateTransactionsList();
+        updateDashboard();
+        saveToStorage();
+      }
+    } else {
+      // Restaurar fila si falló en backend
+      if (rowBackup && !document.querySelector(`tr[data-id-transaccion="${idTransaccion}"]`)) {
+        const tbody = document.getElementById('transactions-tbody');
+        if (tbody) tbody.insertAdjacentHTML('afterbegin', rowBackup);
+      }
+      const msg = (data && data.message) ? data.message : 'No se pudo eliminar la transacción';
+      showToast('Error', msg, 'error');
+    }
+  } catch (err) {
+    console.error(err);
+    // Restaurar fila si falló la red
+    if (rowBackup && !document.querySelector(`tr[data-id-transaccion="${idTransaccion}"]`)) {
+      const tbody = document.getElementById('transactions-tbody');
+      if (tbody) tbody.insertAdjacentHTML('afterbegin', rowBackup);
+    }
+    showToast('Error', 'No se pudo conectar con el servidor', 'error');
+  }
+};
+
+const editServerTransaction = (id) => {
+  const tr = document.querySelector(`tr[data-id-transaccion="${id}"]`);
+  if (!tr) return;
+
+  openTransactionModal(id);
+
+  const title = document.getElementById("transaction-modal-title");
+  if (title) title.textContent = "Editar Transacción";
+
+  document.getElementById("transaction-type").value        = (tr.dataset.idTipo === '1' ? '1' : '2');
+  document.getElementById("transaction-description").value = tr.dataset.descripcion || '';
+  document.getElementById("transaction-amount").value      = tr.dataset.monto || '';
+  document.getElementById("transaction-category").value    = tr.dataset.idCategoria || ''; // 🔹 corregido
+  document.getElementById("transaction-date").value        = tr.dataset.fecha || '';
+
+  ensureHiddenIdInForm(String(id));
+
+  const form = document.getElementById("transaction-form");
+  if (form) form.setAttribute("action", "index.php?action=actualizarTransaccion");
+};
+
 
 const clearFilters = () => {
   const typeEl = document.getElementById("transaction-type-filter");
@@ -686,7 +771,7 @@ function hydrateDashboardFromServer() {
     }).join('');
   })();
 
-  // Progreso de metas (mostramos monto_actual y calculamos porcentaje si está disponible)
+  // Progreso de metas
   (function drawGoals() {
     const container = document.getElementById('goals-progress');
     if (!container) return;
@@ -721,7 +806,7 @@ function hydrateGoalsFromServer() {
     id: String(g.id_meta),
     title: g.titulo_meta,
     targetAmount: Number(g.monto_objetivo || 0),
-    currentAmount: Number(g.monto_actual || 0), // si no hay en BD, quedará 0
+    currentAmount: Number(g.monto_actual || 0),
     deadline: g.fecha_limite,
     description: g.descripcion || ''
   }));
@@ -795,7 +880,6 @@ const openGoalModal = (goalId = null) => {
       document.getElementById("goal-amount").value = goal.targetAmount;
       document.getElementById("goal-deadline").value = goal.deadline;
       document.getElementById("goal-description").value = goal.description || "";
-      // Set hidden id and switch form to update
       if (hiddenId) hiddenId.value = goalId;
       if (form) form.action = 'index.php?action=actualizarMeta';
       if (submitBtn) submitBtn.textContent = 'Actualizar Meta';
@@ -850,7 +934,6 @@ const editGoal = (goalId) => openGoalModal(goalId);
 const deleteGoal = (goalId) => {
   if (!confirm("¿Estás seguro de que quieres eliminar esta meta?")) return;
 
-  // Llamada al backend para eliminar la meta
   fetch(`index.php?action=eliminarMeta&id=${encodeURIComponent(goalId)}`, {
     method: 'GET',
     headers: { 'X-Requested-With': 'XMLHttpRequest' }
@@ -891,7 +974,7 @@ const openAddProgressModal = (goalId) => {
   if (goal) {
     const cur = Number(goal.currentAmount || 0);
     const tgt = Number(goal.targetAmount || 0);
-    // user requested min = 0 and max = monto de la meta
+
     amountInput.setAttribute('min', 0);
     amountInput.setAttribute('max', tgt);
     amountInput.setAttribute('placeholder', `Máx ${tgt}`);
@@ -903,7 +986,8 @@ const openAddProgressModal = (goalId) => {
     previewFill.style.width = pct + '%';
     percentLabel.textContent = `${pct.toFixed(1)}% completado`;
 
-    // live preview when user types an amount
+    // live preview
+    const newAmountInput = amountInput.cloneNode(true);
     const updatePreview = () => {
       const v = Number(newAmountInput.value || 0);
       const newTotal = cur + v;
@@ -911,9 +995,6 @@ const openAddProgressModal = (goalId) => {
       previewFill.style.width = newPct + '%';
       percentLabel.textContent = `${newPct.toFixed(1)}% completado`;
     };
-
-    // remove previous listeners by replacing input node, then attach
-    const newAmountInput = amountInput.cloneNode(true);
     amountInput.parentNode.replaceChild(newAmountInput, amountInput);
     newAmountInput.addEventListener('input', updatePreview);
   }
@@ -938,7 +1019,6 @@ const addProgressToGoal = (amount) => {
     return;
   }
 
-  // Try to persist on server; if it fails, fallback to local-only update
   (async () => {
     try {
       const formData = new FormData();
@@ -955,9 +1035,9 @@ const addProgressToGoal = (amount) => {
       if (res.ok) {
         const data = await res.json().catch(() => null);
         if (data && data.success) {
-          // update local state with canonical value returned by server
-          appState.goals[idx].currentAmount = Number(data.new_amount || data.new_amount === 0 ? data.new_amount : appState.goals[idx].currentAmount + parsedAmount);
-          // add a local transaction record for UI/history
+          appState.goals[idx].currentAmount = Number(
+            data.new_amount || data.new_amount === 0 ? data.new_amount : appState.goals[idx].currentAmount + parsedAmount
+          );
           appState.transactions.push({
             id: generateId(),
             type: 'expense',
@@ -977,7 +1057,7 @@ const addProgressToGoal = (amount) => {
         }
       }
 
-      // fallback: local update
+      // fallback local
       appState.goals[idx].currentAmount = (appState.goals[idx].currentAmount || 0) + parsedAmount;
       appState.transactions.push({
         id: generateId(),
@@ -1053,7 +1133,7 @@ const updateWeeklyStats = () => {
   const weekly = appState.transactions.filter(t => {
     const d = new Date(t.date);
     return d >= weekStart && d <= weekEnd;
-    });
+  });
 
   const weeklyIncome = weekly.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const weeklyExpenses = weekly.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -1281,6 +1361,7 @@ const updateCalendarDisplay = () => {
 
   calendar.innerHTML = html;
 };
+const editReminder = (reminderId) => openReminderModal(reminderId);
 
 const updateRemindersList = () => {
   const container = document.getElementById("reminders-list");
@@ -1313,10 +1394,9 @@ const updateRemindersList = () => {
       <div class="reminder-item">
         <div class="reminder-title">${r.title}</div>
         <div class="reminder-date">
-          ${formatDate(r.date)} ${
-            daysUntil === 0 ? "(Hoy)" :
-            daysUntil === 1 ? "(Mañana)" : `(${daysUntil} días)`
-          }
+          ${formatDate(r.date)} ${daysUntil === 0 ? "(Hoy)" :
+          daysUntil === 1 ? "(Mañana)" : `(${daysUntil} días)`
+        }
         </div>
         ${r.amount ? `<div class="reminder-amount">${formatCurrency(r.amount)}</div>` : ""}
         <div style="margin-top:.5rem;">
@@ -1382,6 +1462,27 @@ const closeReminderModal = () => {
   appState.currentEditingId = null;
 };
 
+// --- Helpers para borrar recordatorios ---
+const deleteReminderLocal = (reminderId) => {
+  if (!confirm("¿Estás seguro de que quieres eliminar este recordatorio?")) return;
+  appState.reminders = appState.reminders.filter((r) => r.id !== String(reminderId));
+  updateCalendar();
+  saveToStorage();
+  showToast("Recordatorio eliminado", "El recordatorio ha sido eliminado correctamente", "info");
+};
+
+// Si el id es numérico, asumimos que existe en BD y usamos el endpoint
+const deleteReminder = (reminderId) => {
+  const isServerId = /^\d+$/.test(String(reminderId));
+  if (isServerId) {
+    deleteServerReminder(reminderId);
+  } else {
+    deleteReminderLocal(reminderId);
+  }
+};
+
+
+
 const saveReminder = (formData) => {
   const reminderData = {
     title: formData.title,
@@ -1409,18 +1510,7 @@ const saveReminder = (formData) => {
   closeReminderModal();
 };
 
-const editReminder = (reminderId) => openReminderModal(reminderId);
-
-const deleteReminder = (reminderId) => {
-  if (confirm("¿Estás seguro de que quieres eliminar este recordatorio?")) {
-    appState.reminders = appState.reminders.filter((r) => r.id !== reminderId);
-    updateCalendar();
-    saveToStorage();
-    showToast("Recordatorio eliminado", "El recordatorio ha sido eliminado correctamente", "info");
-  }
-};
-
-// --- Server-side edit/delete helpers ---
+// --- Server-side edit/delete helpers (recordatorios) ---
 const editServerReminder = (id) => {
   const el = document.querySelector(`.reminder-item[data-id="${id}"]`);
   if (!el) return;
@@ -1625,18 +1715,17 @@ const getIconClass = (icon) => {
   return icons[icon] || "piggy-bank";
 };
 
-// ----- Stubs para evitar ReferenceError si aún no tienes estos modales -----
-function openAddMoneyModal() { /* opcional: implementar modal de agregar dinero */ }
-function closeAddMoneyModal() { /* opcional */ }
 
-// Event Listeners
+function openAddMoneyModal() {  }
+function closeAddMoneyModal() {  }
+
+
 document.addEventListener("DOMContentLoaded", () => {
   const main = document.getElementById('main-app');
   if (main) main.classList.add('active');
   hydrateWeeklyFromServer();
   loadFromStorage();
 
-  // Hero chart (opcional)
   setTimeout(() => {
     const heroCanvas = document.getElementById("hero-chart");
     if (heroCanvas) {
@@ -1713,22 +1802,77 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const txForm = document.getElementById("transaction-form");
   if (txForm) {
-    const hasAction = txForm.getAttribute("action");
-    if (!hasAction) {
-      txForm.addEventListener("submit", (e) => {
+    txForm.addEventListener("submit", async (e) => {
+      const action = txForm.getAttribute("action") || "";
+
+      if (/actualizarTransaccion/.test(action)) {
         e.preventDefault();
+
         const fd = new FormData(txForm);
-        const type = fd.get("id_tipo") === "1" ? "income" : "expense";
-        saveTransaction({
-          type,
-          description: fd.get("descripcion"),
-          amount: fd.get("monto"),
-          category: fd.get("id_categoria"),
-          date: fd.get("fecha"),
-        });
-      });
-    }
+
+        // Normalizar monto (coma → punto)
+        const rawMonto = (fd.get("monto") || "").toString().trim();
+        const normalized = rawMonto.replace(/\./g, "").replace(/,/g, ".");
+        const montoNumber = Math.round(parseFloat(normalized));
+        if (!isFinite(montoNumber) || montoNumber <= 0) {
+          showToast("Error", "Monto inválido", "error");
+          return;
+        }
+        fd.set("monto", String(montoNumber));
+
+        // Asegurar ids válidos
+        fd.set("id_tipo", String(fd.get("id_tipo") === "2" ? 2 : 1));
+        fd.set("id_categoria", String(parseInt(fd.get("id_categoria") || "0", 10)));
+
+        const idTx = fd.get("id_transaccion");
+        if (!idTx || isNaN(+idTx) || +idTx <= 0) {
+          showToast("Error", "Falta el id de transacción", "error");
+          return;
+        }
+
+        try {
+          const res = await fetch(action, {
+            method: "POST",
+            body: fd,
+            credentials: "same-origin",
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+          });
+
+          let data = null;
+          try { data = await res.json(); } catch (_) {}
+
+          if (res.ok && data && data.success) {
+            showToast("Transacción actualizada", "Se guardaron los cambios", "success");
+
+            const tr = document.querySelector(`tr[data-id-transaccion="${idTx}"]`);
+            if (tr) {
+              tr.querySelector("td:nth-child(1)").textContent = formatDate(fd.get("fecha"));
+              tr.querySelector("td:nth-child(2)").textContent = fd.get("descripcion");
+              tr.querySelector("td:nth-child(3)").textContent = getCategoryName(fd.get("id_categoria"));
+              tr.querySelector("td:nth-child(4)").textContent = (fd.get("id_tipo") === "1" ? "Ingreso" : "Gasto");
+              tr.querySelector("td:nth-child(5)").textContent =
+                Number(fd.get("monto") || 0).toLocaleString("es-CO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+              tr.dataset.idTipo      = fd.get("id_tipo");
+              tr.dataset.idCategoria = fd.get("id_categoria");
+              tr.dataset.descripcion = fd.get("descripcion");
+              tr.dataset.monto       = fd.get("monto");
+              tr.dataset.fecha       = fd.get("fecha");
+            }
+
+            closeTransactionModal();
+          } else {
+            const msg = (data && data.message) ? data.message : "Datos inválidos";
+            showToast("Error", msg, "error");
+          }
+        } catch (err) {
+          console.error(err);
+          showToast("Error", "No se pudo conectar con el servidor", "error");
+        }
+      }
+    });
   }
+
 
   // --- GOAL FORM ---
   const goalForm = document.getElementById('goal-form');
@@ -1772,8 +1916,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json().catch(() => null);
             if (res.ok && data && data.success) {
               showToast(isEditServer ? 'Recordatorio actualizado' : 'Recordatorio creado',
-                        isEditServer ? 'El recordatorio se actualizó en la base de datos' : 'El recordatorio se guardó correctamente',
-                        'success');
+                isEditServer ? 'El recordatorio se actualizó en la base de datos' : 'El recordatorio se guardó correctamente',
+                'success');
               appState.currentEditingServerId = null;
               closeReminderModal();
               await refreshRemindersFromServer();
@@ -1861,3 +2005,7 @@ window.openReminderModal = openReminderModal;
 window.closeReminderModal = closeReminderModal;
 window.editReminder = editReminder;
 window.deleteReminder = deleteReminder;
+
+// Export helpers específicos de servidor
+window.editServerTransaction = editServerTransaction;
+window.deleteServerTransaction = deleteServerTransaction;

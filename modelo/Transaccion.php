@@ -29,7 +29,6 @@ class Transaccion
         $dias = $this->diasConsecutivos($id_usuario);
         $this->eu->setDiasConsecutivos($id_usuario, (int)$dias);
         return $stmt2->execute();
-        
     }
 
     public function contarPorUsuario($id_usuario)
@@ -47,29 +46,29 @@ class Transaccion
 
     public function diasConsecutivos($idUsuario)
     {
-        // Devuelve cuántos días consecutivos (hacia atrás desde hoy) tiene con transacciones
-        $sql = "SELECT DISTINCT DATE(fecha) AS d
-                FROM Transaccion
-                WHERE id_usuario = ?
-                ORDER BY d DESC";
+        $sql = "SELECT fecha AS d
+            FROM Transaccion 
+            WHERE id_usuario = ?
+              AND fecha <= CURDATE()
+            GROUP BY fecha
+            ORDER BY fecha DESC
+            LIMIT 60";
         $stmt = $this->conexion->prepare($sql);
         $stmt->bind_param("i", $idUsuario);
         $stmt->execute();
         $rs = $stmt->get_result();
 
         $hoy = new DateTimeImmutable(date('Y-m-d'));
-        $count = 0;
         $prev = $hoy;
+        $count = 0;
 
         while ($row = $rs->fetch_assoc()) {
             $d = new DateTimeImmutable($row['d']);
             if ($count === 0) {
-                // primer día debe ser hoy para empezar racha; si no es hoy, racha = 0
                 if ($d->format('Y-m-d') !== $hoy->format('Y-m-d')) break;
                 $count = 1;
                 $prev = $hoy->sub(new DateInterval('P1D'));
             } else {
-                // siguientes deben ser previos consecutivos
                 if ($d->format('Y-m-d') === $prev->format('Y-m-d')) {
                     $count++;
                     $prev = $prev->sub(new DateInterval('P1D'));
@@ -80,6 +79,7 @@ class Transaccion
         }
         return $count;
     }
+
 
 
     public function obtenerTransacciones($id_usuario)
@@ -93,12 +93,15 @@ class Transaccion
     /**
      * Elimina una transacción por su id_transaccion y actualiza EstadisticasUso
      */
-    public function eliminarTransaccion(int $idTransaccion)
+    public function eliminarTransaccion($idTransaccion)
     {
         $this->conexion->begin_transaction();
         try {
             $stmt = $this->conexion->prepare("SELECT id_usuario FROM Transaccion WHERE id_transaccion = ? LIMIT 1");
-            if (!$stmt) { $this->conexion->rollback(); return false; }
+            if (!$stmt) {
+                $this->conexion->rollback();
+                return false;
+            }
             $stmt->bind_param("i", $idTransaccion);
             $stmt->execute();
             $res = $stmt->get_result();
@@ -112,7 +115,10 @@ class Transaccion
             $idUsuario = (int)$row['id_usuario'];
 
             $del = $this->conexion->prepare("DELETE FROM Transaccion WHERE id_transaccion = ?");
-            if (!$del) { $this->conexion->rollback(); return false; }
+            if (!$del) {
+                $this->conexion->rollback();
+                return false;
+            }
             $del->bind_param("i", $idTransaccion);
             $ok = $del->execute();
             $del->close();
@@ -129,16 +135,27 @@ class Transaccion
                 $stmt2->execute();
                 $stmt2->close();
             }
-
-            // Recalcular días consecutivos y guardar
-            $dias = $this->diasConsecutivos($idUsuario);
-            $this->eu->setDiasConsecutivos($idUsuario, (int)$dias);
-
             $this->conexion->commit();
             return true;
         } catch (Throwable $e) {
             $this->conexion->rollback();
             return false;
         }
+    }
+
+
+    public function actualizarTransaccion($id_transaccion,$idtipo_transaccion, $descripcion, $monto, $idCategoriaTransaccion, $fecha)
+    {
+        $stmt = $this->conexion->prepare("
+        UPDATE Transaccion
+        SET idtipo_transaccion = ?, descripcion = ?, monto = ?, idCategoriaTransaccion = ?, fecha = ?
+        WHERE id_transaccion = ?
+    ");
+        if (!$stmt) {
+            throw new Exception("Error prepare(update): " . $this->conexion->error);
+        }
+        $stmt->bind_param("isdisi",$idtipo_transaccion, $descripcion, $monto, $idCategoriaTransaccion, $fecha, $id_transaccion);
+        $ok = $stmt->execute();
+        return $ok;
     }
 }

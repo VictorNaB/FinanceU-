@@ -44,6 +44,45 @@ class ControladorTransaccion
         }
     }
 
+    public function actualizar()
+    {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (!isset($_SESSION['id_usuario'])) {
+            header('Location: index.php?action=mostrarLogin');
+            exit;
+        }
+        $idTrans     = (int)($_POST['id_transaccion'] ?? 0);
+        $idTipo      = (int)($_POST['id_tipo'] ?? 0);
+        $idCategoria = (int)($_POST['id_categoria'] ?? 0);
+        $desc        = trim($_POST['descripcion'] ?? '');
+        $monto       = (float)($_POST['monto'] ?? 0);
+        $fecha       = $_POST['fecha'] ?? date('Y-m-d');
+
+        if ($idTrans <= 0 || $idTipo <= 0 || $idCategoria <= 0 || $desc === '' || $monto <= 0) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Datos inválidos']);
+            exit;
+        }
+
+        try {
+            $ok = $this->modelo->actualizarTransaccion($idTrans,$idTipo, $desc, $monto, $idCategoria, $fecha);
+
+            $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => (bool)$ok]);
+                exit;
+            }
+
+            header('Location: index.php?action=app&page=transacciones');
+            exit;
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()]);
+        }
+    }
+
+
 
     public function mostrarTransacciones($id_usuario)
     {
@@ -53,9 +92,11 @@ class ControladorTransaccion
 
     public function eliminar()
     {
-        $id = (int)($_GET['id'] ?? 0);
+        // aceptar id por GET o POST
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : (int)($_POST['id'] ?? 0);
         if ($id <= 0) {
-            echo "ID inválido";
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'ID inválido']);
             exit;
         }
 
@@ -72,7 +113,8 @@ class ControladorTransaccion
             header('Location: index.php?action=app&page=transacciones');
             exit;
         } catch (Exception $e) {
-            echo "Error al eliminar transacción: " . $e->getMessage();
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Error al eliminar: ' . $e->getMessage()]);
         }
     }
 }

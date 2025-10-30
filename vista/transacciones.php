@@ -71,20 +71,33 @@
             7 => 'Otros'
           ];
           ?>
-          <?php while ($t = $transacciones->fetch_assoc()): ?> <tr>
+          <?php while ($t = $transacciones->fetch_assoc()):
+            $idTransaccion = (int)$t['id_transaccion']; // <— define $idT
+            $idTipo = (int)$t['idtipo_transaccion'];
+            $idCat  = (int)$t['idCategoriaTransaccion'];
+          ?>
+            <tr
+              data-id-transaccion="<?=  $idTransaccion ?>"
+              data-id-tipo="<?= $idTipo ?>"
+              data-id-categoria="<?= $idCat ?>"
+              data-descripcion="<?= htmlspecialchars($t['descripcion']) ?>"
+              data-monto="<?= htmlspecialchars($t['monto']) ?>"
+              data-fecha="<?= htmlspecialchars($t['fecha']) ?>">
               <td><?= htmlspecialchars($t['fecha']) ?></td>
               <td><?= htmlspecialchars($t['descripcion']) ?></td>
-              <td><?= htmlspecialchars($mapCategorias[(int)$t['idCategoriaTransaccion']] ?? $t['idCategoriaTransaccion']) ?></td>
-              <td><?= htmlspecialchars($mapTipos[(int)$t['idtipo_transaccion']] ?? $t['idtipo_transaccion']) ?></td>
+              <td><?= htmlspecialchars($mapCategorias[$idCat] ?? $idCat) ?></td>
+              <td><?= htmlspecialchars($mapTipos[$idTipo] ?? $idTipo) ?></td>
               <td><?= number_format((float)$t['monto'], 2) ?></td>
-              <td> <button class="btn-icon">
-                <i class="fas fa-edit"></i>
-              </button>
-                <button class="btn-icon">
+              <td>
+                <button class="btn-icon" onclick="editServerTransaction('<?=  $idTransaccion ?>')">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon danger" onclick="deleteServerTransaction('<?=  $idTransaccion ?>')">
                   <i class="fas fa-trash"></i>
                 </button>
               </td>
-            </tr> <?php endwhile; ?> <?php else: ?> <tr>
+            </tr>
+          <?php endwhile; ?> ?> <?php else: ?> <tr>
             <td colspan="6" class="text-center">No se encontraron transacciones</td>
           </tr> <?php endif; ?>
       </tbody>
@@ -103,6 +116,7 @@
 
       <div class="modal-body">
         <form id="transaction-form" class="modal-form" method="post" action="index.php?action=crearTransaccion">
+          <input type="hidden" id="transaction-id" name="id_transaccion" value="">
           <div class="form-group">
             <label for="transaction-type">Tipo</label>
             <select id="transaction-type" name="id_tipo" required>

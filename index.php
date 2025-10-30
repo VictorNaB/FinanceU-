@@ -61,6 +61,12 @@ if (isset($_GET['action'])) {
         case 'eliminarMeta':
             $controladorMetas->eliminar();
             break;
+        case 'eliminarTransaccion':
+            $controladorTransaccion->eliminar();
+            break;   
+        case 'actualizarTransaccion':
+            $controladorTransaccion->actualizar();
+            break; 
         default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 
             require 'vista/index.php';
