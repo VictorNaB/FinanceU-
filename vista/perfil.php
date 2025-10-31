@@ -35,7 +35,7 @@ if (session_status() === PHP_SESSION_NONE) {
                 <h3>Información Personal</h3>
             </div>
             <div class="card-content">
-                <form id="profile-form" class="profile-form" method="POST" action="index.php?action=actualizarPerfil">
+                <form  class="profile-form" method="POST" action="index.php?action=actualizarPerfil">
                     <input type="hidden" name="id_usuario" value="<?php echo htmlspecialchars($_SESSION['id_usuario']); ?>">
                     <div class="form-row">
                         <div class="form-group">
