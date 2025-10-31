@@ -539,11 +539,14 @@ const updateTransactionsList = () => {
   const tbody = document.getElementById("transactions-tbody");
   if (!tbody) return;
 
-  const typeSel = document.getElementById("transaction-type-filter");
-  const catSel = document.getElementById("transaction-category-filter");
-  const dateInp = document.getElementById("transaction-date-filter");
+  const getEl = (id, alt = []) =>
+  document.getElementById(id) || alt.map(s => document.querySelector(s)).find(Boolean) || null;
 
-  const typeFilter = typeSel ? typeSel.value : "all";
+  const typeSel = getEl("transaction-type-filter", ["#id_tipo", "[name='id_tipo']"]);
+  const catSel = getEl("transaction-category-filter", ["#id_categoria", "[name='id_categoria']"]);
+  const dateInp = getEl("transaction-date-filter", ["#fecha", "[name='fecha']"]);
+
+  const typeFilter = typeSel ? typeSel.value : "all"; 
   const categoryFilter = catSel ? catSel.value : "all";
   const dateFilter = dateInp ? dateInp.value : "";
 
@@ -1846,6 +1849,8 @@ function closeAddMoneyModal() { }
 
 
 document.addEventListener("DOMContentLoaded", () => {
+  
+  localStorage.removeItem('financeu_data');
   const main = document.getElementById('main-app');
   if (main) main.classList.add('active');
   hydrateWeeklyFromServer();

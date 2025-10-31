@@ -72,7 +72,7 @@
           ];
           ?>
           <?php while ($t = $transacciones->fetch_assoc()):
-            $idTransaccion = (int)$t['id_transaccion']; // <— define $idT
+            $idTransaccion = (int)$t['id_transaccion']; 
             $idTipo = (int)$t['idtipo_transaccion'];
             $idCat  = (int)$t['idCategoriaTransaccion'];
           ?>
