@@ -2042,7 +2042,13 @@ document.addEventListener("DOMContentLoaded", () => {
   ].forEach((id) => {
     const f = document.getElementById(id);
     if (!f) return;
+    const hasAction = f.getAttribute('action');
     f.addEventListener("submit", (e) => {
+      // Si el formulario tiene atributo action y NO es el formulario de recordatorio (que siempre se maneja por JS),
+      // dejamos que el navegador haga el submit normal hacia el servidor.
+      if (hasAction && id !== "reminder-form") {
+        return; // permitir envío normal
+      }
       e.preventDefault();
       const fd = new FormData(f);
       if (id === "reminder-form") {
