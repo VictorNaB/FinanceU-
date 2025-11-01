@@ -5,12 +5,14 @@ require_once 'controlador/ControladorTransaccion.php';
 require_once 'controlador/ControladorMetas.php';
 require_once 'controlador/ControladorPerfil.php';
 require_once 'controlador/ControladorRecordatorios.php';
+require_once 'controlador/ControladorAdministrador.php';
 // Crear una instancia del controlador 
 
 $controlador = new ControladorEstudiante();
 $controladorTransaccion = new ControladorTransaccion();
 $controladorMetas = new ControladorMeta();
 $controladorPerfil = new ControladorPerfil();
+$controladorAdmin = new ControladorAdministrador();
 $ctrl = new ControladorRecordatorios();
 
 
@@ -95,6 +97,17 @@ if (isset($_GET['action'])) {
             break;
         case 'getProximos':
             $ctrl->obtenerProximos();
+            break;
+        case 'administrador':
+            $controladorAdmin->mostrarDashboard();
+            break;
+        case 'getUsuarios':
+            // Devuelve la lista de usuarios en JSON (usado por la vista administrador)
+            $controladorAdmin->getUsuarios();
+            break;
+        case 'eliminarUsuarioAdmin':
+            // Endpoint para eliminar usuarios (POST)
+            $controladorAdmin->eliminarUsuarioAdmin();
             break;
         default:
             // Si la acción no es reconocida, redirigir al formulario de inicio de sesión 

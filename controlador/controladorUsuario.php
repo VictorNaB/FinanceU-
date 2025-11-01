@@ -20,6 +20,11 @@ class ControladorEstudiante
         require 'vista/app.php';
     }
 
+    public function mostrarAdmin()
+    {
+        require 'vista/administrador.php';
+    }
+
     public function iniciarSesion($correo, $contrasena)
     {
         if ($this->modelo->verificarCredenciales($correo, $contrasena)) {
@@ -30,15 +35,33 @@ class ControladorEstudiante
             // Obtener toda la información del usuario
             $infoUsuario = $this->modelo->obtenerInformacionUsuario($correo);
 
-            // Guardar cada valor por separado en la sesión
+            // Si no se obtuvo información, redirigir al login con mensaje
+            if (!$infoUsuario || !is_array($infoUsuario)) {
+                if (session_status() === PHP_SESSION_NONE) {
+                    session_start();
+                }
+                $_SESSION['error'] = 'No se pudo cargar la información del usuario.';
+                header('Location: index.php?action=mostrarLogin');
+                exit();
+            }
+
+            // Guardar todas las variables de sesión antes de redirigir
             $_SESSION['id_usuario']   = $infoUsuario['id_usuario'];
+            $_SESSION['id_rol']       = isset($infoUsuario['id_rol']) ? (string)$infoUsuario['id_rol'] : null;
             $_SESSION['usuario']      = $infoUsuario['nombre'];
             $_SESSION['apellido']     = $infoUsuario['apellido'];
             $_SESSION['correo']       = $infoUsuario['correo'];
             $_SESSION['universidad']  = $infoUsuario['universidad'];
             $_SESSION['programa']     = $infoUsuario['programa'];
 
-            $this->mostrarDasboard();
+            // Redirigir según rol: admin (1) -> panel administrador, otro -> app
+            if (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] === '1') {
+                header('Location: index.php?action=administrador');
+                exit();
+            }
+
+            header('Location: index.php?action=app');
+            exit();
         } else {
             echo "Credenciales incorrectas.";
         }

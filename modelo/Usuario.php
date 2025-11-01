@@ -66,6 +66,7 @@ class Usuario
     {
         $stmt = $this->conexion->prepare("SELECT 
             u.id_usuario,
+            u.id_rol,
             u.nombre,
             u.apellido,
             a.correo,
@@ -73,7 +74,7 @@ class Usuario
             u.programa_estudio AS programa
         FROM usuarios u
         JOIN accesos a ON u.id_usuario = a.id_usuario
-        JOIN universidad uni ON u.id_universidad = uni.id_universidad
+        LEFT JOIN universidad uni ON u.id_universidad = uni.id_universidad
         WHERE a.correo = ?
     ");
         if (!$stmt) {
@@ -253,6 +254,44 @@ class Usuario
     public function getLastError()
     {
         return $this->lastError;
+    }
+
+    /**
+     * Devuelve un array con todos los usuarios y sus datos relacionados (correo, universidad, programa, rol)
+     * Si ocurre un error devuelve un array vacío y almacena el error en lastError
+     */
+    public function obtenerTodosLosUsuarios()
+    {
+        try {
+            $query = "SELECT 
+                u.id_usuario,
+                u.nombre,
+                u.apellido,
+                a.correo,
+                IFNULL(uni.nombre, '') AS universidad,
+                u.programa_estudio AS programa,
+                u.id_rol
+            FROM usuarios u
+            LEFT JOIN accesos a ON u.id_usuario = a.id_usuario
+            LEFT JOIN universidad uni ON u.id_universidad = uni.id_universidad
+            ORDER BY u.id_usuario ASC";
+
+            $resultado = $this->conexion->query($query);
+            if (!$resultado) {
+                $this->lastError = $this->conexion->error;
+                return [];
+            }
+
+            $usuarios = [];
+            while ($fila = $resultado->fetch_assoc()) {
+                $usuarios[] = $fila;
+            }
+
+            return $usuarios;
+        } catch (Exception $e) {
+            $this->lastError = $e->getMessage();
+            return [];
+        }
     }
 
 }

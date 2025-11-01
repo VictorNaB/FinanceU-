@@ -2130,6 +2130,151 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+/* ==========================
+   Código específico para Admin
+   Mueve aquí la lógica que antes estaba inline en administrador.php
+   Se inicializa sólo si existe el contenedor #admin-dashboard
+   ========================== */
+
+function initAdmin() {
+  const adminRoot = document.getElementById('admin-dashboard');
+  if (!adminRoot) return; // no estamos en la vista admin
+
+  let currentUserToDelete = null;
+
+  async function loadUsers() {
+    try {
+      const response = await fetch('index.php?action=getUsuarios', {
+        method: 'GET',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!response.ok) throw new Error('Error al cargar usuarios');
+      const data = await response.json();
+      const tbody = document.getElementById('users-table-body');
+      if (!tbody) return;
+      const universitiesSet = new Set();
+
+      tbody.innerHTML = (Array.isArray(data) ? data : []).map(user => {
+        universitiesSet.add(user.universidad || '');
+        return `
+          <tr>
+            <td>${escapeHtml(user.id_usuario)}</td>
+            <td>${escapeHtml(user.nombre)}</td>
+            <td>${escapeHtml(user.apellido)}</td>
+            <td>${escapeHtml(user.correo)}</td>
+            <td>${escapeHtml(user.universidad || '')}</td>
+            <td>${escapeHtml(user.programa || '')}</td>
+            <td>
+              <button class="btn-icon danger" data-user-id="${escapeHtml(user.id_usuario)}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      const filterSelect = document.getElementById('filter-university');
+      if (filterSelect) {
+        filterSelect.innerHTML = '<option value="">Todas las universidades</option>' +
+          Array.from(universitiesSet).filter(Boolean).sort().map(uni => `<option value="${escapeHtml(uni)}">${escapeHtml(uni)}</option>`).join('');
+      }
+
+      const totalUsersEl = document.getElementById('total-users');
+      const totalUnivEl = document.getElementById('total-universities');
+      if (totalUsersEl) totalUsersEl.textContent = Array.isArray(data) ? data.length : 0;
+      if (totalUnivEl) totalUnivEl.textContent = universitiesSet.size;
+
+      // Attach delete button handlers
+      tbody.querySelectorAll('button[data-user-id]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.getAttribute('data-user-id');
+          showDeleteModal(id);
+        });
+      });
+
+    } catch (error) {
+      console.error('Error:', error);
+      if (typeof showToast === 'function') showToast('Error', 'No se pudieron cargar los usuarios', 'error');
+    }
+  }
+
+  async function deleteUser(userId) {
+    try {
+      const response = await fetch('index.php?action=eliminarUsuarioAdmin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: `id_usuario=${encodeURIComponent(userId)}`
+      });
+      const data = await response.json().catch(() => null);
+      if (data && data.success) {
+        if (typeof showToast === 'function') showToast('Éxito', 'Usuario eliminado correctamente', 'success');
+        await loadUsers();
+      } else {
+        if (typeof showToast === 'function') showToast('Error', (data && data.message) ? data.message : 'No se pudo eliminar el usuario', 'error');
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      if (typeof showToast === 'function') showToast('Error', 'Error al conectar con el servidor', 'error');
+    }
+  }
+
+  function showDeleteModal(userId) {
+    currentUserToDelete = userId;
+    const modal = document.getElementById('delete-modal');
+    if (modal) modal.classList.add('active');
+  }
+
+  function closeDeleteModal() {
+    const modal = document.getElementById('delete-modal');
+    if (modal) modal.classList.remove('active');
+    currentUserToDelete = null;
+  }
+
+  // Search/filter handlers
+  const searchInput = document.getElementById('search-users');
+  if (searchInput) {
+    searchInput.addEventListener('input', function (e) {
+      const searchTerm = (e.target.value || '').toLowerCase();
+      document.querySelectorAll('#users-table-body tr').forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+  }
+
+  const filterSelect = document.getElementById('filter-university');
+  if (filterSelect) {
+    filterSelect.addEventListener('change', function (e) {
+      const university = (e.target.value || '').toLowerCase();
+      document.querySelectorAll('#users-table-body tr').forEach(row => {
+        if (!university) { row.style.display = ''; return; }
+        const uniCell = (row.cells[4] && row.cells[4].textContent || '').toLowerCase();
+        row.style.display = (uniCell === university) ? '' : 'none';
+      });
+    });
+  }
+
+  const confirmBtn = document.getElementById('confirm-delete');
+  if (confirmBtn) {
+    confirmBtn.addEventListener('click', async () => {
+      if (currentUserToDelete) {
+        await deleteUser(currentUserToDelete);
+        closeDeleteModal();
+      }
+    });
+  }
+
+  // Close modal with close buttons
+  document.querySelectorAll('.modal-close').forEach(btn => btn.addEventListener('click', closeDeleteModal));
+
+  // Inicializar carga
+  loadUsers();
+}
+
+document.addEventListener('DOMContentLoaded', initAdmin);
 // Expose functions to global scope for HTML onclick handlers
 window.showLanding = showLanding;
 window.showLogin = showLogin;
