@@ -1535,10 +1535,19 @@ input, select, textarea {
   }
 }
 
-.admin-table{
-  border-collapse: separate;
-  text-align: left;
+.admin-body{
+  background-color: var(--muted);
+  padding: 2rem;
+  min-height: calc(100vh - 64px); /* Ajusta según la altura de la barra de navegación */
+  display: flex;
+}
+.admin-layout{
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
   width: 100%;
+  display: flex;
 }
 
 /* Color Classes for Pockets */

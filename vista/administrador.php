@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="es">
 <?php
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -10,15 +12,43 @@ if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] !== '1') {
 }
 ?>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" href="vista/css/styles.css" />
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <title>FinanceU</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="vista/css/styles.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>FinanceU - Panel de Administración</title>
 </head>
-<body>
+<body class="admin-layout" style="display: flex;">
+<nav class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo"><i class="fas fa-graduation-cap"></i><span>FinanceU</span></div>
+        <button class="sidebar-toggle" id="sidebar-toggle"><i class="fas fa-bars"></i></button>
+      </div>
 
+      <div class="sidebar-content">
+        <div class="user-info" id="user-info">
+          <div class="user-avatar"><i class="fas fa-user"></i></div>
+          <div class="user-details">
+            <div class="user-name"><?php echo htmlspecialchars($_SESSION['usuario']); ?></div>
+            <div class="user-email"><?php echo htmlspecialchars($_SESSION['correo']); ?></div>
+          </div>
+        </div>
+
+        <ul class="nav-menu">
+          <li class="nav-item">
+            <a href="index.php?action=administrador" class="nav-link <?php echo (isset($_GET['page']) && $_GET['page'] === 'administrador') ? 'active' : ''; ?>">
+              <i class="fas fa-chart-line"></i><span>Panel Administrador</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-footer">
+        <a class="logout-btn" href="index.php?action=mostrarLogin">
+          <i class="fas fa-sign-out-alt"></i><span>Cerrar Sesión</span>
+        </a>
+      </div>
+    </nav>
 <section id="admin-dashboard" class="content-section active">
     <div class="section-header">
         <h1>Panel de Administración</h1>
