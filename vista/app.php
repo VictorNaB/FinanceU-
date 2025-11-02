@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 
 $page = strtolower($_GET['page'] ?? 'dashboard');
-$allowed = ['dashboard', 'transacciones', 'perfil', 'metas', 'analisis', 'calendario', 'administrador'];
+$allowed = ['dashboard', 'transacciones', 'perfil', 'metas', 'analisis', 'calendario'];
 if (!in_array($page, $allowed, true)) {
   $page = 'dashboard';
 }
@@ -89,17 +89,6 @@ if ($page === 'transacciones') {
               <i class="fas fa-user-cog"></i><span>Perfil</span>
             </a>
           </li>
-          <?php
-          // Mostrar la opción de administrar usuarios solo si el usuario es administrador
-          $isAdmin = isset($_SESSION['id_rol']) && (string)$_SESSION['id_rol'] === '1';
-          if ($isAdmin):
-          ?>
-          <li class="nav-item">
-            <a href="index.php?action=app&page=administrador" class="nav-link <?php echo $page === 'administrador' ? 'active' : ''; ?>">
-              <i class="fas fa-users-cog"></i><span>Administrar usuarios</span>
-            </a>
-          </li>
-          <?php endif; ?>
         </ul>
       </div>
 

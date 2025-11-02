@@ -20,7 +20,7 @@ class ControladorAdministrador {
 
     // Mostrar la vista del administrador dentro del layout para cargar CSS/JS
     $_GET['page'] = 'administrador';
-    require 'vista/app.php';
+    require 'vista/administrador.php';
     }
 
     public function getUsuarios() {

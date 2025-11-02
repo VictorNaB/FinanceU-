@@ -1535,6 +1535,12 @@ input, select, textarea {
   }
 }
 
+.admin-table{
+  border-collapse: separate;
+  text-align: left;
+  width: 100%;
+}
+
 /* Color Classes for Pockets */
 .color-blue { background-color: #3b82f6; }
 .color-green { background-color: #10b981; }

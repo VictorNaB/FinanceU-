@@ -80,16 +80,16 @@ if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] !== '1') {
     <div class="dashboard-card">
         <div class="card-header">
             <h3>Usuarios Registrados</h3>
-            <div class="header-actions">
-                <input type="text" id="search-users" placeholder="Buscar usuarios..." class="search-input">
-                <select id="filter-university" class="filter-select">
+            <div class="filter-group" style="margin-left: auto; display: block;">
+                <input type="text" id="search-users" placeholder="Buscar usuarios..." />
+                <select id="filter-university">
                     <option value="">Todas las universidades</option>
                 </select>
             </div>
         </div>
         <div class="card-content">
             <div class="table-container">
-                <table class="admin-table">
+                <table class="admin-table" style="border-spacing: 4rem 2rem;">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -98,7 +98,7 @@ if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] !== '1') {
                             <th>Correo</th>
                             <th>Universidad</th>
                             <th>Programa</th>
-                            <th>Acciones</th>
+                            <th>Eliminar</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body">
@@ -130,5 +130,5 @@ if (!isset($_SESSION['id_rol']) || $_SESSION['id_rol'] !== '1') {
 </section>
 
 <!-- El JavaScript de esta vista se carga desde vista/js/script.js -->
-
+<script src="vista/js/script.js?v=11"></script>
 </body>
