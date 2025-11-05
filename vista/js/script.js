@@ -1699,7 +1699,8 @@ const refreshRemindersFromServer = async () => {
       id: r.id_recordatorio?.toString() || (r.id_recordatorio ?? ''),
       title: r.titulo || r.title || '',
       amount: r.monto !== undefined ? Number(r.monto) : null,
-      date: r.fecha || '',
+      // Normalizar fecha a YYYY-MM-DD para comparar con las fechas locales usadas en el calendario
+      date: r.fecha ? (String(r.fecha).length >= 10 ? String(r.fecha).slice(0, 10) : String(r.fecha)) : '',
       type: r.idtipo_recordatorio || r.type || '',
       recurring: r.idrecurrente || r.recurring || '',
       description: r.descripcion || r.description || ''
@@ -1850,11 +1851,15 @@ function closeAddMoneyModal() { }
 
 document.addEventListener("DOMContentLoaded", () => {
   
-  localStorage.removeItem('financeu_data');
   const main = document.getElementById('main-app');
   if (main) main.classList.add('active');
   hydrateWeeklyFromServer();
   loadFromStorage();
+  // Cargar recordatorios desde el servidor al iniciar la vista para mantener el marcado
+  if (typeof refreshRemindersFromServer === 'function') {
+    // no await: la función internamente actualizará el calendario al completar
+    refreshRemindersFromServer();
+  }
 
   // Si la tabla de transacciones fue renderizada por el servidor, hidrátala al cargar
   const transactionsTbody = document.getElementById('transactions-tbody');
