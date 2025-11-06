@@ -599,6 +599,60 @@ const updateTransactionsList = () => {
     .join("");
 };
 
+// Imprimir transacciones (solo la tabla, sin la columna de acciones)
+const printTransactions = () => {
+  const table = document.getElementById('transactions-table');
+  if (!table) return showToast('Error', 'No se encontró la tabla de transacciones', 'error');
+
+  // Clonar la tabla para manipularla sin afectar el DOM
+  const clone = table.cloneNode(true);
+
+  // Eliminar la columna 'Acciones' (última columna) del encabezado
+  const theadRow = clone.querySelector('thead tr');
+  if (theadRow && theadRow.lastElementChild) theadRow.removeChild(theadRow.lastElementChild);
+
+  // Eliminar la celda de acciones de cada fila del tbody
+  clone.querySelectorAll('tbody tr').forEach((tr) => {
+    if (tr.lastElementChild) tr.removeChild(tr.lastElementChild);
+  });
+
+  // Crear título y estilos claros para impresión
+  const styles = `
+    <style>
+      body { font-family: Arial, Helvetica, sans-serif; margin: 20px; color: #111; }
+      h1 { font-size: 18px; margin-bottom: 12px; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+      th { background: #f4f4f4; font-weight: 600; }
+      .transaction-amount.income { color: #0b7a34; }
+      .transaction-amount.expense { color: #b91c1c; }
+      @media print {
+        button { display: none; }
+        body { margin: 0; }
+      }
+    </style>
+  `;
+
+  const title = '<h1>Transacciones</h1>';
+
+  const win = window.open('', '_blank');
+  if (!win) return showToast('Error', 'No se pudo abrir la ventana de impresión', 'error');
+
+  win.document.open();
+  win.document.write(`<html><head><meta charset="utf-8"><title>Transacciones</title>${styles}</head><body>${title}${clone.outerHTML}</body></html>`);
+  win.document.close();
+  win.focus();
+
+  // Dar un pequeño retardo para que el navegador renderice antes de imprimir
+  setTimeout(() => {
+    try {
+      win.print();
+    } catch (e) {
+      console.error('Print error', e);
+    }
+  }, 200);
+};
+
 /* =========================
    HELPERS PARA EL HIDDEN ID
    ========================= */

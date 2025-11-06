@@ -716,6 +716,13 @@ input, select, textarea {
   color: var(--muted-foreground);
 }
 
+/* Small helper to align action buttons next to section headers */
+.section-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 /* Dashboard Styles */
 .stats-grid {
   display: grid;
