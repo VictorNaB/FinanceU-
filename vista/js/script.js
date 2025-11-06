@@ -1851,15 +1851,11 @@ function closeAddMoneyModal() { }
 
 document.addEventListener("DOMContentLoaded", () => {
   
+  localStorage.removeItem('financeu_data');
   const main = document.getElementById('main-app');
   if (main) main.classList.add('active');
   hydrateWeeklyFromServer();
   loadFromStorage();
-  // Cargar recordatorios desde el servidor al iniciar la vista para mantener el marcado
-  if (typeof refreshRemindersFromServer === 'function') {
-    // no await: la función internamente actualizará el calendario al completar
-    refreshRemindersFromServer();
-  }
 
   // Si la tabla de transacciones fue renderizada por el servidor, hidrátala al cargar
   const transactionsTbody = document.getElementById('transactions-tbody');
