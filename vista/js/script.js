@@ -14,6 +14,89 @@ let appState = {
   currentYear: new Date().getFullYear(),
 };
 
+// Imprimir transacciones: abre una ventana nueva con la tabla y lanza el diálogo de impresión
+// Imprime únicamente las columnas: Fecha, Descripción, Categoría y Monto (no imprime 'Tipo' ni 'Acciones')
+const printTransactions = () => {
+  const section = document.getElementById('transactions-section');
+  const table = document.getElementById('transactions-table');
+  if (!section || !table) {
+    showToast('Aviso', 'No se encontró la sección de transacciones para imprimir.', 'info');
+    return;
+  }
+
+  const title = (section.querySelector('.section-header h1') || {}).textContent || 'Transacciones';
+  const styles = `
+    body{font-family:Arial,Helvetica,sans-serif;margin:20px;color:#222}
+    h2{margin-bottom:12px}
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left}
+    th{background:#f5f5f5}
+    .transaction-amount.income{color:green}
+    .transaction-amount.expense{color:red}
+  `;
+
+  // Clonar la tabla y eliminar las columnas que no queremos imprimir (Tipo, Acciones)
+  const tblClone = table.cloneNode(true);
+
+  // Determinar índices de columnas a eliminar buscando por encabezado
+  const thead = tblClone.querySelector('thead');
+  let removeCols = [];
+  if (thead) {
+    const ths = Array.from(thead.querySelectorAll('th'));
+    ths.forEach((th, idx) => {
+      const txt = (th.textContent || '').trim().toLowerCase();
+      if (txt === 'tipo' || txt === 'acciones' || txt === 'acción' || txt === 'acciones') removeCols.push(idx);
+    });
+    // Fallback: si no se detectaron por texto, usar índices esperados (Tipo=3, Acciones=5)
+    if (!removeCols.length) {
+      // Solo añadimos si existen esos índices
+      if (ths.length > 3) removeCols.push(3);
+      if (ths.length > 5) removeCols.push(5);
+    }
+  }
+
+  // Normalizar índices (únicos, válidos) y ordenarlos de mayor a menor para eliminar sin reprocesar índices
+  removeCols = Array.from(new Set(removeCols)).filter(i => Number.isInteger(i)).sort((a,b) => b - a);
+
+  // Eliminar ths
+  if (thead && removeCols.length) {
+    const ths = Array.from(thead.querySelectorAll('th'));
+    removeCols.forEach(i => { if (ths[i]) ths[i].remove(); });
+  }
+
+  // Eliminar celdas en cada fila del tbody
+  const rows = Array.from(tblClone.querySelectorAll('tbody tr'));
+  rows.forEach((tr) => {
+    const cells = Array.from(tr.children);
+    removeCols.forEach(i => { if (cells[i]) cells[i].remove(); });
+  });
+
+  // También quitar pie de tabla si existe
+  const tfoot = tblClone.querySelector('tfoot');
+  if (tfoot) {
+    const ftrs = Array.from(tfoot.querySelectorAll('tr'));
+    ftrs.forEach(tr => {
+      const cells = Array.from(tr.children);
+      removeCols.forEach(i => { if (cells[i]) cells[i].remove(); });
+    });
+  }
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>${styles}</style></head><body><h2>${escapeHtml(title)}</h2>${tblClone.outerHTML}</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) {
+    showToast('Error', 'No se pudo abrir la ventana de impresión. Revisa bloqueadores de ventanas emergentes.', 'error');
+    return;
+  }
+
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  w.focus();
+  // Dejar un pequeño delay para que el navegador renderice antes de imprimir
+  setTimeout(() => { try { w.print(); w.close(); } catch (e) { console.error(e); } }, 500);
+};
+
 // Utility Functions
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat("es-CO", {
