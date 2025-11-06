@@ -1,16 +1,10 @@
 <section id="transactions-section" class="content-section active">
   <div class="section-header">
     <h1>Gestión de Transacciones</h1>
-    <div class="section-actions">
-      <button class="btn-primary" type="button" onclick="openTransactionModal()">
-        <i class="fas fa-plus"></i>
-        Nueva Transacción
-      </button>
-      <button class="btn-secondary" type="button" onclick="printTransactions()">
-        <i class="fas fa-print"></i>
-        Imprimir
-      </button>
-    </div>
+    <button class="btn-primary" type="button" onclick="openTransactionModal()">
+      <i class="fas fa-plus"></i>
+      Nueva Transacción
+    </button>
   </div>
 
   <!-- Filtros -->
