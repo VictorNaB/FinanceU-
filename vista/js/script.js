@@ -199,6 +199,51 @@ const escapeHtml = (unsafe) => {
     .replace(/'/g, '&#039;');
 };
 
+// Helpers para crear enlaces de Google Calendar / ICS
+const pad = (n) => String(n).padStart(2, '0');
+
+// Formatea una Date (local) a YYYYMMDD (para eventos de día completo)
+const toYYYYMMDD = (d) => {
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}`;
+};
+
+// Formatea Date a YYYYMMDDTHHMMSSZ en UTC
+const toGoogleDateTimeUTC = (d) => {
+  const u = new Date(d.getTime());
+  const Y = u.getUTCFullYear();
+  const M = pad(u.getUTCMonth()+1);
+  const D = pad(u.getUTCDate());
+  const h = pad(u.getUTCHours());
+  const m = pad(u.getUTCMinutes());
+  const s = pad(u.getUTCSeconds());
+  return `${Y}${M}${D}T${h}${m}${s}Z`;
+};
+
+// Crea URL para abrir el evento en Google Calendar. Si startDateStr es fecha (YYYY-MM-DD) se crea evento de día completo.
+const createGoogleCalendarUrl = (title, description, startDateStr, opts = {}) => {
+  if (!startDateStr) startDateStr = toLocalDateInput();
+  // try parse as date-only
+  const d = parseDateOnly(String(startDateStr).slice(0,10));
+
+  // all-day event: end is next day
+  const startYmd = toYYYYMMDD(d);
+  const end = new Date(d.getTime() + 24*60*60*1000);
+  const endYmd = toYYYYMMDD(end);
+
+  const text = encodeURIComponent(title || 'Recordatorio');
+  const details = encodeURIComponent(description || '');
+  const dates = `${startYmd}/${endYmd}`;
+
+  const base = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+  const params = `&text=${text}&details=${details}&dates=${dates}`;
+  return base + params;
+};
+
+const openGoogleCalendarForReminder = (title, description, startDateStr) => {
+  const url = createGoogleCalendarUrl(title, description, startDateStr);
+  window.open(url, '_blank');
+};
+
 const generateId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
@@ -1869,14 +1914,17 @@ const refreshRemindersFromServer = async () => {
           const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
           const fr = d.getDate() + ' de ' + months[d.getMonth()] + ' de ' + d.getFullYear();
 
+          // Crear URL de Google Calendar para este recordatorio (evento de día completo)
+          const gcal = createGoogleCalendarUrl(title, r.descripcion || '', fechaRaw);
           return `
               <div class="reminder-item" data-id="${r.id_recordatorio}">
                 <div class="reminder-title">${escapeHtml(title)}</div>
                 <div class="reminder-date">${fr} ${diasTxt}</div>
                 ${monto ? `<div class="reminder-amount">${monto}</div>` : ''}
-                <div style="margin-top:.5rem;">
+                <div style="margin-top:.5rem;display:flex;gap:.5rem;align-items:center;">
                   <button class="btn-secondary" onclick="editServerReminder(${r.id_recordatorio})" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-edit"></i></button>
                   <button class="btn-danger" onclick="deleteServerReminder(${r.id_recordatorio})" style="padding:.25rem .5rem;font-size:.875rem;"><i class="fas fa-trash"></i></button>
+                  <a class="btn-icon" href="${gcal}" target="_blank" rel="noopener noreferrer" title="Agregar a Google Calendar"><i class="fas fa-calendar-plus"></i></a>
                 </div>
               </div>
             `;
