@@ -33,7 +33,7 @@
                     <h2>Iniciar Sesión</h2>
                     <p>Accede a tu cuenta para continuar gestionando tus finanzas</p>
 
-                    <form id="login-form" class="auth-form" method="POSt" action="index.php?action=iniciarSesion">
+                    <form id="login-form" class="auth-form" method="POST" action="index.php?action=iniciarSesion">
                         <div class="form-group">
                             <label for="login-email">Correo Electrónico</label>
                             <input type="email" id="login-email" name="correo" required>
@@ -46,11 +46,9 @@
 
                         <div class="auth-error" id="login-error"></div>
 
-                        <a href="dashboardFinanciero.html">
-                            <button type="submit" class="btn-primary btn-full">
-                                Iniciar Sesión
-                            </button>
-                        </a>
+                        <button type="submit" class="btn-primary btn-full">
+                            Iniciar Sesión
+                        </button>
                     </form>
 
                     <div class="auth-divider">
@@ -67,3 +65,5 @@
 </body>
 
 </html>
+
+<script src="vista/js/script.js"></script>

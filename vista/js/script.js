@@ -107,6 +107,63 @@ const formatCurrency = (amount) => {
   }).format(amount || 0);
 };
 
+/* =========
+   Modal de error de login (ventana flotante)
+   - Se crea dinámicamente si no existe
+   - Usa las clases existentes `.modal` y `.modal-content` en CSS
+   ========= */
+const closeLoginErrorModal = () => {
+  const m = document.getElementById('login-error-modal');
+  if (!m) return;
+  m.classList.remove('active');
+  // limpiar timer si existe
+  try { if (m._autoCloseTimer) clearTimeout(m._autoCloseTimer); } catch (e) {}
+  // remover listener de ESC si fue añadido
+  try { if (m._escHandler) document.removeEventListener('keydown', m._escHandler); } catch (e) {}
+  // eliminar después de pequeña animación
+  setTimeout(() => { try { m.remove(); } catch (e) {} }, 300);
+};
+
+const showLoginErrorModal = (message = 'Usuario o clave incorrecto') => {
+  // Si ya existe, actualizar y mostrar
+  let m = document.getElementById('login-error-modal');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'login-error-modal';
+    m.className = 'modal';
+    m.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Error de inicio de sesión</h3>
+          <button class="modal-close" type="button" aria-label="Cerrar" onclick="closeLoginErrorModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+          <p id="login-error-message"></p>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-secondary" type="button" onclick="closeLoginErrorModal()">Cerrar</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(m);
+
+    // cerrar al pulsar ESC
+    const escHandler = (ev) => { if (ev.key === 'Escape') closeLoginErrorModal(); };
+    m._escHandler = escHandler;
+    document.addEventListener('keydown', escHandler);
+  }
+
+  const msgEl = document.getElementById('login-error-message');
+  if (msgEl) msgEl.textContent = message;
+
+  // Mostrar modal
+  m.classList.add('active');
+
+  // Auto cerrar en 6 segundos (opcional)
+  if (m._autoCloseTimer) clearTimeout(m._autoCloseTimer);
+  m._autoCloseTimer = setTimeout(() => { closeLoginErrorModal(); }, 6000);
+};
+
 const formatDate = (date) => {
   // Parse date-only strings as local dates to avoid timezone shifts (YYYY-MM-DD)
   const parseDateOnly = (s) => {
@@ -1998,15 +2055,38 @@ document.addEventListener("DOMContentLoaded", () => {
     loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const ok = handleLogin(fd.get("email"), fd.get("password"));
-      const err = document.getElementById("login-error");
-      if (err) {
-        if (ok) err.classList.remove("show");
-        else {
-          err.textContent = "Credenciales incorrectas. Intenta nuevamente o regístrate.";
-          err.classList.add("show");
+      // Enviar credenciales al servidor vía AJAX y manejar respuesta JSON
+      (async () => {
+        try {
+          // Enviar los campos tal como vienen en el formulario (ej. 'correo' y 'contrasena')
+          const action = e.target.getAttribute('action') || window.location.href;
+          const res = await fetch(action, {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin',
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          });
+
+          // Intentar parsear JSON
+          let data = null;
+          try { data = await res.json(); } catch (err) { data = null; }
+
+          if (data && data.success) {
+            // Redirigir según la respuesta del servidor
+            if (data.redirect) window.location.href = data.redirect;
+            else window.location.reload();
+          } else {
+            const msg = (data && data.message) ? data.message : 'Usuario o clave incorrecto.';
+            showLoginErrorModal(msg);
+          }
+        } catch (err) {
+          console.error('Error enviando login:', err);
+          // Fallback: intentar submit normal (caerá al flujo server-side)
+          e.target.submit();
         }
-      }
+      })();
     });
   }
 

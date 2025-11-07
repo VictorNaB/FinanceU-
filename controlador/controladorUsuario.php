@@ -27,6 +27,8 @@ class ControladorEstudiante
 
     public function iniciarSesion($correo, $contrasena)
     {
+        $isAjax = isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+
         if ($this->modelo->verificarCredenciales($correo, $contrasena)) {
             if (session_status() === PHP_SESSION_NONE) {
                 session_start();
@@ -41,6 +43,11 @@ class ControladorEstudiante
                     session_start();
                 }
                 $_SESSION['error'] = 'No se pudo cargar la información del usuario.';
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => false, 'message' => $_SESSION['error']]);
+                    exit();
+                }
                 header('Location: index.php?action=mostrarLogin');
                 exit();
             }
@@ -56,13 +63,29 @@ class ControladorEstudiante
 
             // Redirigir según rol: admin (1) -> panel administrador, otro -> app
             if (isset($_SESSION['id_rol']) && $_SESSION['id_rol'] === '1') {
+                if ($isAjax) {
+                    header('Content-Type: application/json');
+                    echo json_encode(['success' => true, 'redirect' => 'index.php?action=administrador']);
+                    exit();
+                }
                 header('Location: index.php?action=administrador');
+                exit();
+            }
+
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'redirect' => 'index.php?action=app']);
                 exit();
             }
 
             header('Location: index.php?action=app');
             exit();
         } else {
+            if ($isAjax) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Usuario o clave incorrecto']);
+                exit();
+            }
             echo "Credenciales incorrectas.";
         }
     }
