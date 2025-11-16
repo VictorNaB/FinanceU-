@@ -26,8 +26,10 @@ const printTransactions = () => {
 
   const title = (section.querySelector('.section-header h1') || {}).textContent || 'Transacciones';
   const styles = `
-    body{font-family:Arial,Helvetica,sans-serif;margin:20px;color:#222}
-    h2{margin-bottom:12px}
+    @page { margin: 0; size: aut; }
+    * { margin: 0; padding: 0; }
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:10mm;color:#222;background:#fff}
+    h2{margin-bottom:12px;margin-top:0}
     table{width:100%;border-collapse:collapse;margin-top:8px}
     th,td{border:1px solid #ddd;padding:8px;text-align:left}
     th{background:#f5f5f5}
@@ -81,7 +83,7 @@ const printTransactions = () => {
     });
   }
 
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><style>${styles}</style></head><body><h2>${escapeHtml(title)}</h2>${tblClone.outerHTML}</body></html>`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>${styles}</style></head><body><h2>${escapeHtml(title)}</h2>${tblClone.outerHTML}</body></html>`;
 
   const w = window.open('', '_blank');
   if (!w) {
