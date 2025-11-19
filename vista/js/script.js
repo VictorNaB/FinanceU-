@@ -15,7 +15,7 @@ let appState = {
 };
 
 // Imprimir transacciones: abre una ventana nueva con la tabla y lanza el diálogo de impresión
-// Imprime únicamente las columnas: Fecha, Descripción, Categoría y Monto (no imprime 'Tipo' ni 'Acciones')
+// Genera una vista seria y elegante que contiene: Fecha, Descripción, Categoría y Monto
 const printTransactions = () => {
   const section = document.getElementById('transactions-section');
   const table = document.getElementById('transactions-table');
@@ -25,78 +25,192 @@ const printTransactions = () => {
   }
 
   const title = (section.querySelector('.section-header h1') || {}).textContent || 'Transacciones';
+
+  // Recolectar los datos actualmente visibles: preferir appState.transactions (si existen),
+  // si no, parsear la tabla DOM.
+  let rowsData = [];
+
+  if (Array.isArray(appState.transactions) && appState.transactions.length) {
+    // Aplicar filtros igual que en updateTransactionsList
+    const typeSel = document.getElementById('transaction-type-filter');
+    const catSel = document.getElementById('transaction-category-filter');
+    const dateInp = document.getElementById('transaction-date-filter');
+
+    const typeFilter = typeSel ? typeSel.value : 'all';
+    const categoryFilter = catSel ? catSel.value : 'all';
+    const dateFilter = dateInp ? dateInp.value : '';
+
+    let mappedType = typeFilter;
+    if (typeFilter === '1') mappedType = 'income';
+    if (typeFilter === '2') mappedType = 'expense';
+
+    rowsData = appState.transactions.filter((t) => {
+      if (mappedType !== 'all' && t.type !== mappedType) return false;
+      if (categoryFilter !== 'all' && String(t.category) !== String(categoryFilter)) return false;
+      if (dateFilter && t.date !== dateFilter) return false;
+      return true;
+    }).map(t => ({
+      date: t.date || '',
+      description: t.description || '',
+      category: getCategoryName(t.category),
+      amount: Number(t.amount || 0),
+      type: t.type || 'expense'
+    }));
+  }
+
+  // Fallback: si no hay appState.transactions, parsear tabla DOM
+  if (!rowsData.length) {
+    const tbody = table.querySelector('tbody');
+    if (!tbody) return showToast('Aviso', 'No hay transacciones para imprimir.', 'info');
+    const trs = Array.from(tbody.querySelectorAll('tr'));
+    rowsData = trs.map(tr => {
+      const cells = Array.from(tr.children);
+      // Intentar mapear por orden conocido: Fecha, Descripción, Categoría, Tipo, Monto, Acciones
+      const dateText = (cells[0] && cells[0].textContent.trim()) || '';
+      const descText = (cells[1] && cells[1].textContent.trim()) || '';
+      const catText = (cells[2] && cells[2].textContent.trim()) || '';
+      let amountText = '';
+      // Monto puede estar en la columna 4 o 3 dependiendo de la tabla
+      if (cells[4]) amountText = cells[4].textContent.trim();
+      else if (cells[3]) amountText = cells[3].textContent.trim();
+
+      const parsed = Number(String(amountText).replace(/[^0-9\-.,]/g, '').replace(/\./g, '').replace(/,/g, '.')) || 0;
+      return { date: dateText, description: descText, category: catText, amount: parsed, type: parsed >= 0 ? 'income' : 'expense' };
+    }).filter(r => r.description || r.amount || r.date);
+  }
+
+  if (!rowsData.length) return showToast('Aviso', 'No hay transacciones para imprimir.', 'info');
+
+  // Calcular total neto
+  const total = rowsData.reduce((s, r) => s + Number(r.amount || 0), 0);
+
+  // Formateador local para impresión
+  const nf = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 });
+
+  // Estilos más informales / amigables para impresión (sans-serif, colores suaves)
   const styles = `
-    @page { margin: 0; size: aut; }
-    * { margin: 0; padding: 0; }
-    body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:10mm;color:#222;background:#fff}
-    h2{margin-bottom:12px;margin-top:0}
-    table{width:100%;border-collapse:collapse;margin-top:8px}
-    th,td{border:1px solid #ddd;padding:8px;text-align:left}
-    th{background:#f5f5f5}
-    .transaction-amount.income{color:green}
-    .transaction-amount.expense{color:red}
+    @page { margin: 12mm; }
+    html,body{height:100%;}
+    body{font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color:#333; margin:0; padding:0; background: #fff}
+    .print-container{padding:14mm 12mm;}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .brand{font-size:18px;font-weight:700;color:#1565c0}
+    .meta{font-size:12px;color:#6b7280}
+    h1{font-size:16px;margin:6px 0 8px 0;color:#0f172a}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin-top:10px;font-size:13px;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,0.06)}
+    thead th{background:#f8fafc;padding:10px 12px;border-bottom:1px solid #e6eef9;text-align:left;font-weight:600;color:#0f172a}
+    tbody td{padding:10px 12px;border-bottom:1px solid #f1f5f9;background:#fff}
+    tbody tr:nth-child(odd) td{background:#fcfdff}
+    tfoot td{padding:10px 12px;font-weight:700;border-top:2px solid #e6eef9;background:#f8fafc}
+    .amount{white-space:nowrap;text-align:right}
+    .amount.positive{color:#0b6b3a}
+    .amount.negative{color:#b91c1c}
+    .small-muted{font-size:12px;color:#64748b;margin-top:6px}
+    @media print {
+      button { display: none; }
+      table{box-shadow:none}
+    }
   `;
 
-  // Clonar la tabla y eliminar las columnas que no queremos imprimir (Tipo, Acciones)
-  const tblClone = table.cloneNode(true);
+  // Construir HTML de la tabla imprimible (orden: Fecha, Descripción, Categoría, Monto)
+  const rowsHtml = rowsData.map(r => {
+    const amt = Number(r.amount || 0);
+    const cls = amt >= 0 ? 'positive' : 'negative';
+    const dateStr = (typeof r.date === 'string' && r.date.length === 10) ? formatDate(r.date) : String(r.date);
+    return `<tr>
+      <td>${escapeHtml(dateStr)}</td>
+      <td>${escapeHtml(r.description)}</td>
+      <td>${escapeHtml(r.category)}</td>
+      <td class="amount ${cls}">${escapeHtml(nf.format(amt))}</td>
+    </tr>`;
+  }).join('');
 
-  // Determinar índices de columnas a eliminar buscando por encabezado
-  const thead = tblClone.querySelector('thead');
-  let removeCols = [];
-  if (thead) {
-    const ths = Array.from(thead.querySelectorAll('th'));
-    ths.forEach((th, idx) => {
-      const txt = (th.textContent || '').trim().toLowerCase();
-      if (txt === 'tipo' || txt === 'acciones' || txt === 'acción' || txt === 'acciones') removeCols.push(idx);
-    });
-    // Fallback: si no se detectaron por texto, usar índices esperados (Tipo=3, Acciones=5)
-    if (!removeCols.length) {
-      // Solo añadimos si existen esos índices
-      if (ths.length > 3) removeCols.push(3);
-      if (ths.length > 5) removeCols.push(5);
+  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>${styles}</style></head><body>
+    <div class="print-container">
+      <header>
+        <div>
+          <div class="brand">FinanceU</div>
+          <div class="meta">Reporte de transacciones</div>
+        </div>
+        <div class="meta">Impreso: ${escapeHtml(new Date().toLocaleString('es-CO'))}</div>
+      </header>
+      <h1>${escapeHtml(title)}</h1>
+      <div class="small-muted">Listado de transacciones (Fecha • Descripción • Categoría • Monto)</div>
+      <table aria-label="Transacciones">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Descripción</th>
+            <th>Categoría</th>
+            <th style="text-align:right">Monto</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="3">Total neto</td>
+            <td class="amount">${escapeHtml(nf.format(total))}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </body></html>`;
+
+  // Intentar abrir en nueva ventana/pestaña
+  const w = window.open('', '_blank');
+  if (w) {
+    try {
+      w.document.open();
+      w.document.write(html);
+      w.document.close();
+      w.focus();
+      setTimeout(() => { try { w.print(); w.close(); } catch (e) { console.error(e); } }, 600);
+      return;
+    } catch (e) {
+      console.warn('Impresión en nueva ventana falló, probando iframe:', e);
+      try { if (w && !w.closed) w.close(); } catch (e2) {}
     }
   }
 
-  // Normalizar índices (únicos, válidos) y ordenarlos de mayor a menor para eliminar sin reprocesar índices
-  removeCols = Array.from(new Set(removeCols)).filter(i => Number.isInteger(i)).sort((a,b) => b - a);
+  // Fallback: crear un iframe oculto en la misma página (menos propenso a bloqueadores)
+  try {
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.overflow = 'hidden';
+    iframe.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(iframe);
 
-  // Eliminar ths
-  if (thead && removeCols.length) {
-    const ths = Array.from(thead.querySelectorAll('th'));
-    removeCols.forEach(i => { if (ths[i]) ths[i].remove(); });
-  }
+    const idoc = iframe.contentWindow || iframe.contentDocument;
+    const doc = (idoc && idoc.document) ? idoc.document : (iframe.contentDocument || iframe.contentWindow.document);
+    doc.open();
+    doc.write(html);
+    doc.close();
 
-  // Eliminar celdas en cada fila del tbody
-  const rows = Array.from(tblClone.querySelectorAll('tbody tr'));
-  rows.forEach((tr) => {
-    const cells = Array.from(tr.children);
-    removeCols.forEach(i => { if (cells[i]) cells[i].remove(); });
-  });
-
-  // También quitar pie de tabla si existe
-  const tfoot = tblClone.querySelector('tfoot');
-  if (tfoot) {
-    const ftrs = Array.from(tfoot.querySelectorAll('tr'));
-    ftrs.forEach(tr => {
-      const cells = Array.from(tr.children);
-      removeCols.forEach(i => { if (cells[i]) cells[i].remove(); });
-    });
-  }
-
-  const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${escapeHtml(title)}</title><style>${styles}</style></head><body><h2>${escapeHtml(title)}</h2>${tblClone.outerHTML}</body></html>`;
-
-  const w = window.open('', '_blank');
-  if (!w) {
-    showToast('Error', 'No se pudo abrir la ventana de impresión. Revisa bloqueadores de ventanas emergentes.', 'error');
+    // Esperar a renderizar y llamar a print desde el contexto del iframe
+    setTimeout(() => {
+      try {
+        (iframe.contentWindow || iframe).focus();
+        (iframe.contentWindow || iframe).print();
+      } catch (err) {
+        console.error('Error al imprimir desde iframe:', err);
+        showToast('Error', 'No se pudo iniciar la impresión automáticamente. Intenta permitir ventanas emergentes o prueba copiar/pegar el contenido.', 'error');
+      }
+      // remover iframe después de un tiempo
+      setTimeout(() => { try { iframe.remove(); } catch (e) {} }, 1000);
+    }, 600);
+    return;
+  } catch (err) {
+    console.error('Fallback de impresión falló:', err);
+    showToast('Error', 'No se pudo abrir la ventana de impresión ni crear el iframe.', 'error');
     return;
   }
-
-  w.document.open();
-  w.document.write(html);
-  w.document.close();
-  w.focus();
-  // Dejar un pequeño delay para que el navegador renderice antes de imprimir
-  setTimeout(() => { try { w.print(); w.close(); } catch (e) { console.error(e); } }, 500);
 };
 
 // Utility Functions
